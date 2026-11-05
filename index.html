@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quoi faire ?</title>
+<meta name="description" content="Idées de sorties, événements à ne pas rater, adresses et sites à surveiller.">
+<meta name="theme-color" content="#171520">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icones/icon-192.png">
+<link rel="apple-touch-icon" href="icones/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Manrope:wght@400;500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>
+  // Thème choisi sur cet appareil, appliqué avant l'affichage pour éviter un flash.
+  // « auto » (par défaut) : Dure Vie si l'appareil est en clair, Sombre s'il est en sombre.
+  (function () {
+    var choix = 'auto';
+    try { choix = localStorage.getItem('qf-theme') || 'auto'; } catch (e) { /* stockage bloqué */ }
+    var sombre = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = choix === 'auto' ? (sombre ? 'sombre' : 'durevie') : choix;
+  })();
+</script>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="top"><div><h1>Quoi faire<i>?</i></h1><div class="sub"><span id="sub"></span><span id="sync" class="sync" hidden></span></div></div>
+    <div class="hbtns">
+      <button class="rbtn" data-tab="notes" title="Notes" aria-label="Notes"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h7M9 17h5"/></svg></button>
+      <button class="rbtn" data-tab="radar" title="Radar" aria-label="Radar"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
+      <button class="rbtn" data-act="settings" title="Paramètres" aria-label="Paramètres"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </div></div>
+  <nav class="tabs">
+    <button class="tab on" data-tab="idees">Idées</button>
+    <button class="tab" data-tab="evts">À venir</button>
+    <button class="tab" data-tab="adresses">Adresses</button>
+  </nav>
+</div></header>
+<main class="wrap" id="main"><div class="empty">Chargement…</div></main>
+<div id="modal"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

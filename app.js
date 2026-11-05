@@ -26,12 +26,12 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v0.1";
+const VERSION = "v0.2";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
 // Vide = pas encore branché : on peut quand même tout remplir à la main.
-const LECTEUR_URL = "";
+const LECTEUR_URL = "https://script.google.com/macros/s/AKfycbw7TcvRAan2cbuHaLLqGOlq__GZe64IXZ-XdpRL964U3CkReaUkn-D4fdnrMiwIVoDh/exec";
 
 // Les colonnes de chaque tableau : clé dans l'appli <-> en-tête dans Excel.
 // Ce sont les mêmes en-têtes que l'ancien Google Sheet, pour pouvoir le réimporter.

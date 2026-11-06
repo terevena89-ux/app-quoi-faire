@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.0";
+const VERSION = "v1.1.0";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -44,8 +44,9 @@ const IDEES = {
 const EVTS = {
   nom: "Événements", arr: "evts",
   // niveau : prix de 0 à 3 (Gratuit, €, €€, €€€), déduit du prix en euros s'il est vide
-  keys: ["id", "titre", "type", "lieu", "zone", "debut", "fin", "prix", "lien", "image", "desc", "avec", "statut", "ajoute", "niveau"],
-  headers: ["ID", "Titre", "Type", "Lieu", "Zone", "Début", "Fin", "Prix", "Lien", "Image", "Description", "Avec qui", "Statut", "Ajouté le", "Niveau de prix"]
+  // heure : pour un événement réservé (« 20:00 »), facultative
+  keys: ["id", "titre", "type", "lieu", "zone", "debut", "fin", "prix", "lien", "image", "desc", "avec", "statut", "ajoute", "niveau", "heure"],
+  headers: ["ID", "Titre", "Type", "Lieu", "Zone", "Début", "Fin", "Prix", "Lien", "Image", "Description", "Avec qui", "Statut", "Ajouté le", "Niveau de prix", "Heure"]
 };
 // Radar : les sites des lieux à surveiller
 const SOURCES = {
@@ -72,7 +73,7 @@ const LISTES = {
   energie: ["Chill", "Moyen", "Actif"],
   type: ["Expo", "Ciné", "Concert / Festival", "Spectacle", "Visite", "Atelier", "Autre"],
   zone: ["Paris", "IDF", "Hors IDF"],
-  statut: ["À voir", "Fait", "Pas intéressé"],
+  statut: ["À voir", "Réservé", "Fait", "Pas intéressé"],
   srcCat: ["Salles de concert", "Sites d’info", "Salles de spectacle", "Ciné", "Musées"],
   adrCat: ["Restau", "Bar", "Café", "Musée", "Lieu à visiter", "Boutique", "Activité"],
   adrStatut: ["À tester", "Adoré"]
@@ -99,8 +100,12 @@ const S = {
   mode: "tirage", q: "", tri: "cat", filt: false, lf: { cat: "Toutes", pin: "Toutes" }, open: {},
   ef: { type: "Tout", zone: "Tout", prix: "Tout" }, archive: false, later: false,
   af: { statut: "Tous", cat: "Toutes", prix: "Tout" }, aview: "Liste",
-  view: "Liste", calMonth: "", calDay: ""
+  // view : Cartes / Liste / Calendrier ; calMode : Semaine / Mois
+  view: "Cartes", calMode: "Semaine", calWeek: "", calMonth: "", calDay: "",
+  // vues ouvertes au démarrage, choisies dans Paramètres (synchronisées entre appareils)
+  reglages: { vueIdees: "tirage", vueEvts: "Cartes" }
 };
+const REG_DEFAUT = { vueIdees: "tirage", vueEvts: "Cartes" };
 const MO = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 
 /* ---------- 2. Stockage : Firebase ---------- */
@@ -136,7 +141,7 @@ let demoT = null;
 function sauverDemo() {
   clearTimeout(demoT);
   demoT = setTimeout(() => {
-    const d = { idees: S.idees, evts: S.evts, sources: S.sources, adresses: S.adresses, notes: S.notes };
+    const d = { idees: S.idees, evts: S.evts, sources: S.sources, adresses: S.adresses, notes: S.notes, reglages: S.reglages };
     try { localStorage.setItem("qf-demo", JSON.stringify(d)); } catch (e) { /* stockage plein ou bloqué */ }
   }, 0);
 }
@@ -145,6 +150,7 @@ function demarrerDemo() {
   try { d = JSON.parse(localStorage.getItem("qf-demo")) || {}; } catch (e) { /* rien de gardé */ }
   ["idees", "evts", "sources", "adresses"].forEach(arr => { S[arr] = Array.isArray(d[arr]) ? d[arr] : []; });
   S.notes = String(d.notes || "");
+  S.reglages = Object.assign({}, REG_DEFAUT, d.reglages);
   uid = "demo";
   S.compte = "Mode démo (données sur cet appareil seulement)";
   majSynchro();
@@ -211,7 +217,7 @@ const API = {
   deleteIdee: id => effacer("idees", id),
   saveEvt: o => {
     if (!o.statut) o.statut = "À voir";
-    if (o.type === "Ciné" && o.debut && !o.fin) o.fin = plusUnMois(o.debut);
+    sansFinInventee(o);
     if (!o.ajoute) o.ajoute = today_();
     if (!o.niveau) o.niveau = niveauPrix(o.prix);
     return upsert(EVTS, o);
@@ -242,6 +248,18 @@ const API = {
   parseEventText: (texte, type, titre) => lecteur("texte", { texte, type, titre }),
   extractPlace: url => lecteur("place", { url })
 };
+function sauverReglages() {
+  if (MODE_DEMO) return sauverDemo();
+  setDoc(refDonnees(), { reglages: S.reglages }, { merge: true }).catch(erreurEcriture);
+}
+
+// Film : le lecteur de liens met une fin « au hasard » à +1 mois. On ne la garde pas :
+// un film n'a pas de date de fin connue (le calendrier l'affiche quand même sur 1 mois).
+function sansFinInventee(o) {
+  if (o.type === "Ciné" && o.debut && o.fin === plusUnMois(o.debut)) o.fin = "";
+  return o;
+}
+
 function call(fn, ...args) {
   return Promise.resolve().then(() => API[fn](...args))
     .catch(e => { toast("Oups : " + (e && e.message || e)); throw e; });
@@ -297,6 +315,9 @@ function ecouter() {
   arrets.push(onSnapshot(refDonnees(), { includeMetadataChanges: true }, snap => {
     majSynchro("donnees", snap.metadata);
     const n = snap.exists() ? String(snap.data().notes || "") : "";
+    // réglages : ils ne changent pas la vue déjà ouverte, seulement celle du prochain démarrage
+    const rg = snap.exists() && snap.data().reglages;
+    if (rg) S.reglages = Object.assign({}, REG_DEFAUT, rg);
     // pas d'écrasement pendant que j'écris mes notes
     if (n !== S.notes && !notesSale && document.activeElement?.id !== "notes") {
       S.notes = n;
@@ -308,6 +329,9 @@ function ecouter() {
 
 function demarrerAffichage() {
   S.pret = true;
+  // vues de départ choisies dans Paramètres
+  S.mode = S.reglages.vueIdees === "liste" ? "liste" : "tirage";
+  S.view = ["Cartes", "Liste", "Calendrier"].includes(S.reglages.vueEvts) ? S.reglages.vueEvts : "Cartes";
   suggest();
   // lien partagé : Google Maps -> Adresses, le reste -> À venir
   const lien = SHARED; SHARED = "";
@@ -441,18 +465,73 @@ async function togglePin(id) {
 }
 
 /* ---------- événements ---------- */
+// « À voir » et « Réservé » : encore à venir. « Fait » et « Pas intéressé » : rangés dans les passés.
+const actif = e => !e.statut || e.statut === "À voir" || e.statut === "Réservé";
+const reserve = e => e.statut === "Réservé";
+
+// Trois genres de dates :
+//   jour    : un seul jour précis (concert, atelier…) — début = fin, ou pas de fin pour ces types-là
+//   ouvert  : pas de fin connue (films à l'affiche, spectacles en tournée…)
+//   periode : une date de fin (expos, festivals…)
+const JOUR_UNIQUE = ["Concert / Festival", "Atelier", "Visite"];
+function evGenre(e) {
+  if (!e.debut) return e.fin ? "periode" : "sansdate";
+  if (e.type === "Ciné") return "ouvert";
+  if (e.fin === e.debut || (!e.fin && JOUR_UNIQUE.includes(e.type))) return "jour";
+  return e.fin ? "periode" : "ouvert";
+}
+// Fin « réelle » pour ranger dans les passés : un film disparaît 1 mois après sa sortie.
+function finEffective(e) {
+  const g = evGenre(e);
+  if (g === "jour") return e.debut;
+  if (e.type === "Ciné" && e.debut) return e.fin || plusUnMois(e.debut);
+  return e.fin;
+}
+const dansN = n => n <= 0 ? "Aujourd’hui" : n === 1 ? "Demain" : n < 15 ? "Dans " + n + " j" : "Dans " + Math.round(n / 7) + " sem.";
+
 function evState(e) {
-  const t = today();
-  if (e.statut && e.statut !== "À voir") return { arch: true, label: e.statut, key: e.fin || e.debut || "" };
-  if (e.fin && e.fin < t) return { arch: true, label: "Terminé", key: e.fin };
-  if (e.debut && e.debut > t) { const n = days(t, e.debut); return { label: n === 1 ? "Demain" : "Dans " + n + " j", cls: "soon", key: e.debut }; }
+  const t = today(), g = evGenre(e), fin = finEffective(e);
+  if (!actif(e)) return { arch: true, label: e.statut, key: e.fin || e.debut || "" };
+  if (fin && fin < t) return { arch: true, label: "Terminé", key: fin };
+  if (e.debut && e.debut > t) { const n = days(t, e.debut); return { label: dansN(n), cls: "soon", key: e.debut }; }
+  if (g === "jour") return { label: "Aujourd’hui", cls: "urgent", key: e.debut };
+  if (g === "ouvert") return { label: "À l’affiche", key: fin || "9998", ouvert: true };
   if (e.fin) {
     const n = days(t, e.fin);
-    const label = n === 0 ? (e.debut === e.fin ? "Aujourd’hui" : "Dernier jour !") : "Finit dans " + n + " j";
+    const label = n === 0 ? "Dernier jour !" : n < 15 ? "Finit dans " + n + " j" : "Finit dans " + Math.round(n / 7) + " sem.";
     return { label, cls: n <= 14 ? "urgent" : "", key: e.fin };
   }
-  return { label: e.debut ? "En cours" : "Sans date", key: "9999" };
+  return { label: "Sans date", key: "9999" };
 }
+
+// « 20:00 » -> « 20 h », « 20:30 » -> « 20 h 30 »
+const fmtHeure = h => { const m = String(h || "").match(/^(\d{1,2}):(\d{2})/); return m ? +m[1] + " h" + (m[2] !== "00" ? " " + m[2] : "") : ""; };
+const jourSemaine = iso => new Date(iso + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short" });
+
+// La ligne de date, avec l'icône de son genre : [icône, texte]
+function dateLigne(e) {
+  const g = evGenre(e), t = today(), h = fmtHeure(e.heure);
+  if (g === "sansdate") return [ICON.g_sans, "sans date"];
+  if (g === "jour") return [ICON.g_jour, jourSemaine(e.debut) + " " + fmt(e.debut) + (h ? " · " + h : "")];
+  if (g === "ouvert") return [ICON.g_ouvert, (e.debut <= t ? "depuis le " : "sortie le ") + fmt(e.debut) + (h ? " · " + h : "")];
+  if (!e.debut || e.debut <= t) return [ICON.g_periode, "jusqu’au " + fmt(e.fin)];
+  return [ICON.g_periode, fmt(e.debut) + " → " + fmt(e.fin)];
+}
+// Période déjà commencée : part du temps écoulé, en % (barre de temps restant)
+function progression(e) {
+  if (evGenre(e) !== "periode" || !e.debut || !e.fin) return null;
+  const t = today();
+  if (e.debut > t || e.fin < t) return null;
+  const total = days(e.debut, e.fin);
+  return total > 0 ? Math.round(100 * days(e.debut, t) / total) : null;
+}
+// Étiquettes de la carte : compte à rebours, et « Réservé » si c'est le cas
+function badges(e) {
+  const h = fmtHeure(e.heure);
+  return `<span class="badge ${e.st.cls || ""}">${esc(e.st.label)}</span>` +
+    (reserve(e) ? `<span class="badge resa">${ICON.check}Réservé${h && evGenre(e) !== "jour" ? " · " + esc(h) : ""}</span>` : "");
+}
+const lieuPrix = e => [e.lieu || e.zone, e.prix !== "" && e.prix != null ? (typeof e.prix === "number" ? e.prix + " €" : e.prix) : niveauEvt(e)].filter(Boolean).join(" · ");
 function evSorted() {
   return S.evts.map(e => Object.assign({ st: evState(e) }, e)).sort((a, b) => a.st.key < b.st.key ? -1 : a.st.key > b.st.key ? 1 : 0);
 }
@@ -469,6 +548,12 @@ const svg = d => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" st
 const NUAGE = '<path d="M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.6A3.7 3.7 0 0 1 17.5 18z"/>';
 const ICON = {
   check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  // genres de dates : un seul jour / sans fin connue / période — et le billet « réservé »
+  g_jour: svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/>'),
+  g_ouvert: svg('<circle cx="5" cy="12" r="2" fill="currentColor"/><path d="M7 12h3M13 12h2M18 12h.01M21 12h.01"/>'),
+  g_periode: svg('<circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/><path d="M7 12h10"/>'),
+  g_sans: svg('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2"/>'),
+  billet: svg('<path d="M4 8h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M9 12.5l2 2 4-4"/>'),
   shuffle: svg('<path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/>'),
   edit: svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
   next: svg('<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>'),
@@ -494,7 +579,8 @@ function chipRow(label, key, opts, store, icon) {
 
 function renderIdees() {
   const t = today();
-  const urgents = evSorted().filter(e => !e.st.arch && e.st.key !== "9999" && days(t, e.st.key) <= 14).slice(0, 3);
+  // films à l'affiche exclus : ils n'ont pas de vraie date limite
+  const urgents = evSorted().filter(e => !e.st.arch && !e.st.ouvert && e.st.key !== "9999" && days(t, e.st.key) <= 14).slice(0, 3);
   const quand = { Soirée: "ce soir", "Demi-journée": "cet aprèm", Journée: "aujourd’hui" }[S.f.duree] || "aujourd’hui";
   const seg = [["tirage", ICON.dice, "Tirage"], ["liste", ICON.list, "Liste"]].map(([m, ic, l]) =>
     `<button class="${S.mode === m ? "on" : ""}" data-act="mode" data-v="${m}" aria-pressed="${S.mode === m}">${ic} ${l}</button>`).join("");
@@ -542,23 +628,29 @@ function renderEvts() {
   const act = vis.filter(e => !e.st.arch), arch = vis.filter(e => e.st.arch);
   // par défaut : ce qui est déjà ouvert ou commence dans les 7 jours ; le reste derrière un lien
   const lim = addDays(today(), 7);
-  const now = act.filter(e => !e.debut || e.debut <= lim), later = act.filter(e => e.debut && e.debut > lim);
+  // les réservés remontent en tête (le tri par date est gardé à l'intérieur de chaque groupe)
+  const now = act.filter(e => !e.debut || e.debut <= lim).sort((a, b) => reserve(b) - reserve(a));
+  const later = act.filter(e => e.debut && e.debut > lim).sort((a, b) => reserve(b) - reserve(a));
   return `<div class="add"><input type="url" id="url" placeholder="Colle le lien d’une expo, d’un concert, d’un film…" inputmode="url">
       <button class="btn primary" data-act="extract" id="go">Ajouter</button></div>
     <button class="link" data-act="new-evt">ou remplir à la main</button>
     <div style="height:10px"></div>
-    <div class="row"><div class="chips">${["Liste", "Calendrier"].map(v =>
+    <div class="row"><div class="chips">${["Cartes", "Liste", "Calendrier"].map(v =>
       `<button class="chip ${S.view === v ? "on" : ""}" data-act="view" data-v="${v}">${v}</button>`).join("")}</div></div>` +
     chipRow("Type", "type", ["Tout"].concat(S.L.type), S.ef, o => EMO_TYPE[o]) +
     chipRow("Zone", "zone", ["Tout"].concat(S.L.zone), S.ef) +
     chipRow("Prix", "prix", PRIX_CHOIX, S.ef) +
     (S.view === "Calendrier" ? renderCal(vis) :
-    (now.length ? `<div class="evgrid">${now.map(evCard).join("")}</div>` : `<div class="empty"><span class="big">🌱</span>Rien en cours cette semaine.<br>${later.length ? "Regarde plus loin juste en dessous, ou colle" : "Colle"} un lien juste au-dessus !</div>`) +
+    (now.length ? grilleEvts(now) : `<div class="empty"><span class="big">🌱</span>Rien en cours cette semaine.<br>${later.length ? "Regarde plus loin juste en dessous, ou colle" : "Colle"} un lien juste au-dessus !</div>`) +
     (later.length ? `<button class="link" data-act="later">${S.later ? "Masquer" : "Voir"} ce qui commence plus tard (${later.length})</button>` +
-      (S.later ? `<div class="evgrid">${later.map(evCard).join("")}</div>` : "") + "<br>" : "") +
+      (S.later ? grilleEvts(later) : "") + "<br>" : "") +
     (arch.length ? `<button class="link" data-act="archive">${S.archive ? "Masquer" : "Voir"} les passés et faits (${arch.length})</button>` +
-      (S.archive ? `<div class="evgrid">${arch.map(evCard).join("")}</div>` : "") : ""));
+      (S.archive ? grilleEvts(arch) : "") : ""));
 }
+// Cartes (2 par ligne) ou liste (une ligne par événement), selon la vue choisie
+const grilleEvts = arr => S.view === "Liste"
+  ? `<div class="evlist">${arr.map(evLigne).join("")}</div>`
+  : `<div class="evgrid">${arr.map(evCard).join("")}</div>`;
 
 /* ---------- calendrier ---------- */
 function addDays(iso, n) {
@@ -571,96 +663,135 @@ function plusUnMois(iso) {
   d = Math.min(d, new Date(y, m, 0).getDate());
   return y + "-" + String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0");
 }
-// Période pendant laquelle l'événement est « ouvert ». Film sans fin : 1 mois après la sortie.
+// Période pendant laquelle l'événement est « ouvert » dans le calendrier.
+// Sans fin connue (films…) : affiché sur 1 mois après le début, avec une barre qui s'efface.
 function evRange(e) {
-  if (e.debut) return [e.debut, e.fin || (e.type === "Ciné" ? plusUnMois(e.debut) : e.debut)];
+  const g = evGenre(e);
+  if (g === "jour") return [e.debut, e.debut];
+  if (g === "ouvert") return [e.debut, e.fin || plusUnMois(e.debut)];
+  if (e.debut) return [e.debut, e.fin || e.debut];
   if (e.fin) { const d = e.ajoute && e.ajoute < e.fin ? e.ajoute : today(); return [d < e.fin ? d : e.fin, e.fin]; }
   return null;
 }
+const lundi = iso => addDays(iso, -((new Date(iso + "T12:00:00").getDay() + 6) % 7));
 function shiftMonth(k) {
   let [y, m] = S.calMonth.split("-").map(Number);
   m += k; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; }
   S.calMonth = y + "-" + String(m).padStart(2, "0");
 }
+// Flèches du calendrier : une semaine ou un mois de plus / de moins
+function shiftCal(k) {
+  if (S.calMode === "Mois") return shiftMonth(k);
+  S.calWeek = addDays(S.calWeek, 7 * k);
+  S.calDay = addDays(S.calDay, 7 * k);
+}
+// Bascule semaine / mois : on garde le jour sélectionné
+function setCalMode(m) {
+  S.calMode = m;
+  S.calMonth = S.calDay.slice(0, 7);
+  S.calWeek = lundi(S.calDay);
+}
+
+// Une rangée de 7 jours avec les barres des événements (sert pour la semaine et pour le mois).
+// large : vue semaine (nom des jours, heure dans les blocs d'un seul jour)
+function rangeeSemaine(ws, periodes, t, mois, large) {
+  const we = addDays(ws, 6);
+  const jours = [...Array(7)].map((_, i) => addDays(ws, i));
+  const lignes = []; // dernière colonne occupée par ligne de frise
+  const barres = periodes.filter(x => x.r[0] <= we && x.r[1] >= ws).map(x => {
+    const s = x.r[0] < ws ? 0 : jours.indexOf(x.r[0]);
+    const f = x.r[1] > we ? 6 : jours.indexOf(x.r[1]);
+    let k = lignes.findIndex(fin => fin < s);
+    if (k < 0) { k = lignes.length; lignes.push(f); } else lignes[k] = f;
+    const unJour = x.r[0] === x.r[1];
+    const txt = unJour && large && fmtHeure(x.e.heure) ? fmtHeure(x.e.heure) : x.e.titre;
+    const cls = [unJour && "jour", evGenre(x.e) === "ouvert" && x.r[1] <= we && "ouvert",
+      x.r[0] < ws && "cont-l", x.r[1] > we && "cont-r", reserve(x.e) && "resa"].filter(Boolean).join(" ");
+    return `<div class="bar ${cls}" data-t="${esc(x.e.type)}" style="grid-column:${s + 1}/${f + 2};grid-row:${k + 2}">${esc(txt)}</div>`;
+  }).join("");
+  const cases = jours.map((iso, i) => {
+    const cls = [mois && iso.slice(0, 7) !== mois && "out", iso < t && "past", iso === t && "today", iso === S.calDay && "sel"].filter(Boolean).join(" ");
+    return `<button class="day ${cls}" style="grid-column:${i + 1}" data-act="day" data-v="${iso}">${large ? `<small>${jourSemaine(iso)}</small>` : ""}<span class="num">${+iso.slice(8)}</span></button>`;
+  }).join("");
+  return `<div class="week ${large ? "large" : ""}" style="grid-template-rows:${large ? 40 : 24}px ${lignes.length ? `repeat(${lignes.length}, 18px)` : ""} 6px">${cases}${barres}</div>`;
+}
+
 function renderCal(vis) {
   const t = today();
-  if (!S.calMonth) S.calMonth = t.slice(0, 7);
   if (!S.calDay) S.calDay = t;
-  const [y, m] = S.calMonth.split("-").map(Number);
-  const debutGrille = addDays(S.calMonth + "-01", -((new Date(y, m - 1, 1).getDay() + 6) % 7));
-  const finMois = S.calMonth + "-" + String(new Date(y, m, 0).getDate()).padStart(2, "0");
-  const evs = vis.filter(e => !e.statut || e.statut === "À voir").map(e => ({ e, r: evRange(e) })).filter(x => x.r);
-  const sansDate = vis.filter(e => (!e.statut || e.statut === "À voir") && !evRange(e)).length;
+  if (!S.calMonth) S.calMonth = S.calDay.slice(0, 7);
+  if (!S.calWeek) S.calWeek = lundi(S.calDay);
+  const evs = vis.filter(actif).map(e => ({ e, r: evRange(e) })).filter(x => x.r);
+  const sansDate = vis.filter(e => actif(e) && !evRange(e)).length;
   const on = iso => evs.filter(x => x.r[0] <= iso && iso <= x.r[1]);
   // Tout est dans la frise ; les événements d'un seul jour sont des blocs encadrés.
   const periodes = evs.slice().sort((a, b) => a.r[0] < b.r[0] ? -1 : a.r[0] > b.r[0] ? 1 : (a.r[1] > b.r[1] ? -1 : 1));
 
-  let semaines = "";
-  for (let ws = debutGrille; ws <= finMois; ws = addDays(ws, 7)) {
-    const we = addDays(ws, 6);
-    const jours = [...Array(7)].map((_, i) => addDays(ws, i));
-    const lignes = []; // dernière colonne occupée par ligne de frise
-    const barres = periodes.filter(x => x.r[0] <= we && x.r[1] >= ws).map(x => {
-      const s = x.r[0] < ws ? 0 : jours.indexOf(x.r[0]);
-      const f = x.r[1] > we ? 6 : jours.indexOf(x.r[1]);
-      let k = lignes.findIndex(fin => fin < s);
-      if (k < 0) { k = lignes.length; lignes.push(f); } else lignes[k] = f;
-      return `<div class="bar ${x.r[0] === x.r[1] ? "jour" : ""} ${x.r[0] < ws ? "cont-l" : ""} ${x.r[1] > we ? "cont-r" : ""}" data-t="${esc(x.e.type)}"
-        style="grid-column:${s + 1}/${f + 2};grid-row:${k + 2}">${esc(x.e.titre)}</div>`;
-    }).join("");
-    const cases = jours.map((iso, i) => {
-      const cls = [iso.slice(0, 7) !== S.calMonth && "out", iso < t && "past", iso === t && "today", iso === S.calDay && "sel"].filter(Boolean).join(" ");
-      return `<button class="day ${cls}" style="grid-column:${i + 1}" data-act="day" data-v="${iso}"><span class="num">${+iso.slice(8)}</span></button>`;
-    }).join("");
-    semaines += `<div class="week" style="grid-template-rows:24px ${lignes.length ? `repeat(${lignes.length}, 18px)` : ""} 6px">${cases}${barres}</div>`;
+  let titre, corps;
+  if (S.calMode === "Mois") {
+    const [y, m] = S.calMonth.split("-").map(Number);
+    const debutGrille = lundi(S.calMonth + "-01");
+    const finMois = S.calMonth + "-" + String(new Date(y, m, 0).getDate()).padStart(2, "0");
+    corps = `<div class="dows">${["L", "M", "M", "J", "V", "S", "D"].map(d => `<div class="dow">${d}</div>`).join("")}</div>`;
+    for (let ws = debutGrille; ws <= finMois; ws = addDays(ws, 7)) corps += rangeeSemaine(ws, periodes, t, S.calMonth, false);
+    titre = new Date(y, m - 1, 1).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  } else {
+    const a = S.calWeek, b = addDays(a, 6);
+    const moisDe = iso => new Date(iso + "T12:00:00").toLocaleDateString("fr-FR", { month: "long" });
+    titre = a.slice(5, 7) === b.slice(5, 7) ? `${+a.slice(8)} – ${+b.slice(8)} ${moisDe(b)}` : `${+a.slice(8)} ${moisDe(a)} – ${+b.slice(8)} ${moisDe(b)}`;
+    corps = rangeeSemaine(a, periodes, t, "", true);
   }
 
   const types = [...new Set(evs.map(x => x.e.type).filter(Boolean))];
   const jour = on(S.calDay).map(x => Object.assign({ st: evState(x.e) }, x.e))
-    .sort((a, b) => (a.fin || "9999") < (b.fin || "9999") ? -1 : 1);
+    .sort((a, b) => reserve(b) - reserve(a) || ((a.fin || "9999") < (b.fin || "9999") ? -1 : 1));
   const titreJour = new Date(S.calDay + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-  const mois = new Date(y, m - 1, 1).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  const unite = S.calMode === "Mois" ? "Mois" : "Semaine";
 
-  return `<div class="calhead"><button class="ibtn" data-act="cal-prev" aria-label="Mois précédent">${ICON.prev}</button><b>${mois}</b><button class="ibtn go" data-act="cal-next" aria-label="Mois suivant">${ICON.next}</button></div>
-    <div class="cal"><div class="dows">${["L", "M", "M", "J", "V", "S", "D"].map(d => `<div class="dow">${d}</div>`).join("")}</div>${semaines}</div>
+  return `<div class="row"><div class="chips">${["Semaine", "Mois"].map(v =>
+      `<button class="chip ${S.calMode === v ? "on" : ""}" data-act="calmode" data-v="${v}">${v}</button>`).join("")}</div></div>
+    <div class="calhead"><button class="ibtn" data-act="cal-prev" aria-label="${unite} précédent${unite === "Semaine" ? "e" : ""}">${ICON.prev}</button><b>${titre}</b><button class="ibtn go" data-act="cal-next" aria-label="${unite} suivant${unite === "Semaine" ? "e" : ""}">${ICON.next}</button></div>
+    <div class="cal">${corps}</div>
     <div class="legend">${types.map(ty => `<span><i class="sw" data-t="${esc(ty)}"></i>${esc(ty)}</span>`).join("")}
-      <span><i class="sw jour"></i>encadré = un seul jour</span>${sansDate ? `<span>${sansDate} sans date, visible${sansDate > 1 ? "s" : ""} dans la liste</span>` : ""}</div>
+      <span><i class="sw jour"></i>un seul jour</span><span><i class="sw ouvert"></i>sans fin connue</span><span><i class="sw resa"></i>réservé</span>
+      ${sansDate ? `<span>${sansDate} sans date, visible${sansDate > 1 ? "s" : ""} dans la liste</span>` : ""}</div>
     <div class="dayhead">${titreJour}</div>
-    ${jour.length ? `<div class="evgrid">${jour.map(evCard).join("")}</div>` : '<div class="empty">Rien ce jour-là.</div>'}`;
-}
-
-// Colonne de dates façon agenda : « 21 OCT. 2026 → 10 JANV. 2027 ».
-function dateBlock(e) {
-  // l'année n'est affichée que si ce n'est pas l'année en cours
-  const p = iso => { const [y, m, d] = iso.split("-").map(Number); return `<div class="d"><b>${d}</b><span>${MO[m - 1].replace(".", "")}${y !== new Date().getFullYear() ? " " + y : ""}</span></div>`; };
-  if (!e.debut && !e.fin) return '<div class="dblock"><div class="d"><b>—</b><span>sans date</span></div></div>';
-  // déjà commencé : seule la date de fin compte
-  if (!e.debut || (e.fin && e.fin !== e.debut && e.debut <= today())) return `<div class="dblock"><span>jusqu’au</span>${p(e.fin)}</div>`;
-  return `<div class="dblock">${p(e.debut)}${e.fin && e.fin !== e.debut ? `<i>→</i>${p(e.fin)}` : ""}</div>`;
+    ${jour.length ? `<div class="evlist">${jour.map(evLigne).join("")}</div>` : '<div class="empty">Rien ce jour-là.</div>'}`;
 }
 
 const niveauEvt = e => e.niveau || niveauPrix(e.prix);
+const imageEvt = e => e.image ? `<img src="${esc(e.image)}" referrerpolicy="no-referrer" alt="" loading="lazy" onerror="this.remove()">` : "";
 
+// Carte compacte : image basse avec seulement les étiquettes (haut) et les boutons (bas),
+// puis titre sur 2 lignes, ligne de date avec l'icône de son genre, barre de temps restant, lieu · prix.
 function evCard(e) {
-  // Image de la page en couverture ; à défaut (ou si elle ne charge pas), l'émoji du type sur sa couleur.
-  const lieu = [e.lieu, e.zone && !String(e.lieu).includes(e.zone) ? e.zone : ""].filter(Boolean).join(" · ");
-  const niv = niveauEvt(e);
-  const prix = [niv, e.prix && String(e.prix) !== niv ? e.prix : ""].filter(Boolean).join(" · ");
-  return `<article class="card evc">
-    <div class="cover" data-t="${esc(e.type)}"><span class="cemo">${typeEmo(e.type)}</span>
-      ${e.image ? `<img src="${esc(e.image)}" referrerpolicy="no-referrer" alt="" loading="lazy" onerror="this.remove()">` : ""}
-      <div class="shade"></div>
+  const [ic, quand] = dateLigne(e);
+  const p = progression(e);
+  return `<article class="card evc ${reserve(e) ? "reserve" : ""}">
+    <div class="cover" data-t="${esc(e.type)}"><span class="cemo">${typeEmo(e.type)}</span>${imageEvt(e)}
+      <div class="bds">${badges(e)}</div>
       <div class="pacts ev">
-        ${e.st.arch ? "" : `<button class="pact" data-act="ev-done" data-id="${esc(e.id)}" title="Fait" aria-label="Fait">${ICON.check}</button>`}
+        ${e.st.arch ? "" : `<button class="pact ${reserve(e) ? "on" : ""}" data-act="ev-resa" data-id="${esc(e.id)}" title="${reserve(e) ? "Plus réservé" : "Réservé"}" aria-label="${reserve(e) ? "Plus réservé" : "Réservé"}" aria-pressed="${reserve(e)}">${ICON.billet}</button>
+        <button class="pact" data-act="ev-done" data-id="${esc(e.id)}" title="Fait" aria-label="Fait">${ICON.check}</button>`}
         <button class="pact" data-act="edit-evt" data-id="${esc(e.id)}" title="Modifier" aria-label="Modifier">${ICON.edit}</button>
         ${e.lien ? `<a class="pact" href="${esc(e.lien)}" target="_blank" rel="noopener" title="Ouvrir la page" aria-label="Ouvrir la page">${ICON.next}</a>` : ""}
       </div>
-      <div class="ctitle"><div class="ctags"><span class="badge ${e.st.cls || ""}">${esc(e.st.label)}</span>${e.type ? `<span class="tagt">${typeEmo(e.type)} ${esc(e.type)}</span>` : ""}</div><h3>${esc(e.titre || "(sans titre)")}</h3></div>
     </div>
     <div class="evbody">
-      ${dateBlock(e)}
-      <div class="evinfo">${lieu ? `<div>${esc(lieu)}</div>` : ""}${prix ? `<div>${esc(prix)}</div>` : ""}</div>
+      <h3>${esc(e.titre || "(sans titre)")}</h3>
+      <div class="quand">${ic}<span>${esc(quand)}</span></div>
+      ${p !== null ? `<div class="prog"><i style="width:${p}%"></i></div>` : ""}
+      <div class="evinfo"><div>${esc(lieuPrix(e))}</div></div>
     </div></article>`;
+}
+
+// Mode liste : une ligne par événement, petite image à gauche (toucher la ligne = modifier)
+function evLigne(e) {
+  const [ic, quand] = dateLigne(e);
+  return `<div class="item evl ${reserve(e) ? "reserve" : ""}" data-act="edit-evt" data-id="${esc(e.id)}">
+    <div class="th" data-t="${esc(e.type)}"><span>${typeEmo(e.type)}</span>${imageEvt(e)}</div>
+    <div class="tx"><b>${esc(e.titre || "(sans titre)")}</b><div class="quand">${ic}<span>${esc(quand)}</span></div><div class="meta">${esc(lieuPrix(e))}</div></div>
+    <div class="dr">${badges(e)}</div></div>`;
 }
 
 const TRIS = [["cat", "Par catégorie"], ["nom", "A → Z"]];
@@ -1071,7 +1202,7 @@ const F_EVT = [
   ["lieu", "Lieu", "text"],
   ["debut", "Début", "date", "", "half"], ["fin", "Fin", "date", "", "half"],
   ["prix", "Prix en €", "text", "", "half"], ["niveau", "Prix (0 à 3)", "select", "budget", "half"],
-  ["statut", "Statut", "select", "statut"],
+  ["statut", "Statut", "select", "statut", "half"], ["heure", "Heure (si réservé)", "time", "", "half"],
   ["avec", "Avec qui", "checks", "avec"], ["desc", "Description", "textarea"]
 ];
 const F_SRC = [["nom", "Nom", "text"], ["lien", "Lien", "url"], ["cat", "Catégorie", "srccat"], ["notes", "Notes", "textarea"]];
@@ -1150,7 +1281,6 @@ async function saveForm(btn) {
   const o = readForm();
   const K = KINDS[form.kind];
   if (!o[K.req]) return toast(K.vide);
-  if (form.kind === "evt" && o.type === "Ciné" && o.debut && !o.fin) o.fin = plusUnMois(o.debut);
   if (form.kind === "evt" && !o.niveau) o.niveau = niveauPrix(o.prix);
   // adresse modifiée : on recalcule la position et la ville
   if (form.kind === "adr" && o.adresse !== String(form.base.adresse || "")) { o.lat = ""; o.lng = ""; o.ville = ""; }
@@ -1202,7 +1332,8 @@ async function extract(text) {
     if (reste.length > 15) {
       try { remplirVides(out, await call("parseEventText", reste, out.type, out.titre)); } catch (e) { /* le lien suffit */ }
     }
-    openForm("evt", Object.assign({ statut: "À voir", avec: "" }, out), infos, bloque);
+    sansFinInventee(out);
+    openForm("evt", Object.assign({ statut: "À voir", avec: "" }, out), (infos || []).filter(i => !/^Film : fin/.test(i)), bloque);
   } catch (e) {
     openForm("evt", { lien: url, statut: "À voir" }, ["Lecture impossible : colle le texte de la page ci-dessous, ou complète à la main."], true);
   } finally { if (btn) { btn.disabled = false; btn.textContent = "Ajouter"; } }
@@ -1226,7 +1357,7 @@ async function completerTexte(btn) {
   const o = readForm();
   btn.disabled = true; btn.textContent = "Lecture…";
   try {
-    const ajout = remplirVides(o, await call("parseEventText", texte, o.type, o.titre));
+    const ajout = remplirVides(o, sansFinInventee(Object.assign({ type: o.type }, await call("parseEventText", texte, o.type, o.titre))));
     openForm("evt", o, [ajout.length ? "Complété depuis le texte : " + ajout.join(", ") + ". Vérifie avant d’enregistrer." : "Rien de plus trouvé dans ce texte."]);
   } catch (e) { btn.disabled = false; btn.textContent = "Compléter la fiche"; }
 }
@@ -1255,7 +1386,11 @@ function setTheme(id) {
 /* ---------- Excel : export / import ---------- */
 let importEnAttente = null;
 
-// Paramètres : apparence, Excel (export / import), compte et version
+// Une ligne de choix dans Paramètres (vue de départ d'un onglet)
+const ligneReglage = (label, k, opts) => `<div class="row"><span class="lbl">${label}</span><div class="chips">${opts.map(([v, l]) =>
+  `<button class="chip ${S.reglages[k] === v ? "on" : ""}" data-act="reg" data-k="${k}" data-v="${v}">${l}</button>`).join("")}</div></div>`;
+
+// Paramètres : apparence, vues de départ, Excel (export / import), compte et version
 function openSettings() {
   form = null; importEnAttente = null;
   const cur = choixTheme();
@@ -1265,7 +1400,11 @@ function openSettings() {
     <div class="themes">${THEMES.map(t => `<button class="theme ${t.id === cur ? "on" : ""}" data-act="set-theme" data-v="${t.id}">
       <span class="swatch">${t.sw.map(c => `<i style="background:${c}"></i>`).join("")}</span>
       <span><b>${t.nom}</b><small>${t.desc}</small></span></button>`).join("")}</div>
-    ${uid ? `<div class="lbl" style="margin-top:22px">Excel</div>
+    ${uid ? `<div class="lbl" style="margin-top:22px">Affichage au démarrage</div>
+    <div class="card">${ligneReglage("Idées", "vueIdees", [["tirage", "Tirage"], ["liste", "Liste"]])}
+      ${ligneReglage("À venir", "vueEvts", [["Cartes", "Cartes"], ["Liste", "Liste"], ["Calendrier", "Calendrier"]])}
+      <div class="meta">Les mêmes sur le téléphone et le PC.</div></div>
+    <div class="lbl" style="margin-top:22px">Excel</div>
     <div class="card">
       <h3>Exporter</h3>
       <div class="meta">Un fichier .xlsx avec tes idées, tes événements, tes adresses, ton Radar et tes notes, un onglet chacun.</div>
@@ -1430,7 +1569,6 @@ function fusion(T, rows, simuler, aEcrire) {
       if (T === EVTS) {
         if (!o.statut) o.statut = "À voir";
         if (!o.ajoute) o.ajoute = today();
-        if (o.type === "Ciné" && o.debut && !o.fin) o.fin = plusUnMois(o.debut);
         if (!o.niveau) o.niveau = niveauPrix(o.prix);
       }
       if (T === ADRESSES) {
@@ -1555,6 +1693,21 @@ document.addEventListener("click", async e => {
       const saved = await call("saveEvt", Object.assign({}, ev, { statut: "Fait" }));
       Object.assign(ev, saved); render(); toast("Noté comme fait"); break;
     }
+    case "ev-resa": {
+      // bascule « À voir » <-> « Réservé » ; l'heure se met dans la fiche
+      const ev = S.evts.find(x => x.id === id);
+      const saved = await call("saveEvt", Object.assign({}, ev, { statut: reserve(ev) ? "À voir" : "Réservé" }));
+      Object.assign(ev, saved); render();
+      toast(reserve(ev) ? "Réservé : ajoute l’heure dans la fiche si tu veux" : "Plus marqué comme réservé"); break;
+    }
+    case "reg": {
+      // vue de départ : enregistrée, et appliquée tout de suite
+      S.reglages[el.dataset.k] = el.dataset.v;
+      if (el.dataset.k === "vueIdees") S.mode = el.dataset.v; else S.view = el.dataset.v;
+      el.parentElement.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c === el));
+      sauverReglages(); render(); break;
+    }
+    case "calmode": setCalMode(el.dataset.v); render(); break;
     case "extract": extract($("#url").value); break;
     case "archive": S.archive = !S.archive; render(); break;
     case "view": S.view = el.dataset.v; render(true); break;
@@ -1567,8 +1720,8 @@ document.addEventListener("click", async e => {
     case "copy-prompt": copyPrompt(); break;
     case "set-theme": setTheme(el.dataset.v); break;
     case "imp-ok": confirmImport(el); break;
-    case "cal-prev": shiftMonth(-1); render(); break;
-    case "cal-next": shiftMonth(1); render(); break;
+    case "cal-prev": shiftCal(-1); render(); break;
+    case "cal-next": shiftCal(1); render(); break;
     case "day": S.calDay = el.dataset.v; render(); break;
     case "lf": S.lf[el.dataset.k] = el.dataset.v; render(); break;
     case "lf-reset": S.lf = Object.assign({}, LF_DEFAUT); S.tri = "cat"; render(); break;
@@ -1596,7 +1749,30 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape" && form) closeForm();
 });
 
-// Le « gardien » hors ligne (service worker) : garde une copie des fichiers de l'appli
-if ("serviceWorker" in navigator && !MODE_DEMO) navigator.serviceWorker.register("sw.js");
+// Le « gardien » hors ligne (service worker) : garde une copie des fichiers de l'appli,
+// et installe tout seul les nouvelles versions.
+if ("serviceWorker" in navigator && !MODE_DEMO && location.protocol === "https:") {
+  // updateViaCache "none" : pour savoir s'il existe une nouvelle version, toujours
+  // demander sw.js au serveur, jamais à la mémoire du téléphone
+  navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
+    // Sur Android, l'appli installée reste souvent ouverte en arrière-plan :
+    // à chaque retour dessus, on vérifie s'il y a une mise à jour
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") reg.update().catch(() => {});
+    });
+  }).catch(() => {}); // pas de gardien possible : l'appli marche quand même
+  // Quand la nouvelle version prend le relais, on recharge la page une fois pour l'afficher
+  // (sauf à la toute première installation). Fiche ouverte : on attend qu'elle soit fermée.
+  const avaitUneVersion = !!navigator.serviceWorker.controller;
+  let dejaRecharge = false;
+  const recharger = () => {
+    if (dejaRecharge) return;
+    if (form || $("#modal").innerHTML) return setTimeout(recharger, 3000);
+    dejaRecharge = true;
+    saveNotesNow();
+    setTimeout(() => location.reload(), 300);
+  };
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (avaitUneVersion) recharger(); });
+}
 
 if (MODE_DEMO) demarrerDemo(); else demarrerFirebase();

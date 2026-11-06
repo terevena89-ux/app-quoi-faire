@@ -1,6 +1,18 @@
 # Journal des nouveautés — Quoi faire ?
 
-## v1.0 — 2026-11-06
+## v1.1.0 — 2026-11-06
+- Mises à jour automatiques fiables : le téléphone vérifie la nouvelle version à chaque retour dans l'appli et se recharge tout seul (comme Stuff to go).
+- À venir : trois vues, Cartes / Liste / Calendrier. La liste montre une ligne par événement avec sa petite image.
+- Cartes plus compactes : image plus basse, avec seulement les étiquettes en haut et les boutons en bas ; le titre passe dessous.
+- Trois genres de dates, chacun avec son icône : un seul jour (concert…), sans fin connue (films : « À l'affiche », « depuis le… »), période (expos : « jusqu'au… », avec une barre de temps restant).
+- Nouveau statut « Réservé », avec une heure facultative : contour vert, étiquette verte, remonte en tête. Bouton billet sur chaque carte pour le marquer d'un geste.
+- Calendrier : vue Semaine par défaut (nom des jours, heure des réservés), et vue Mois au choix. Barre qui s'efface = sans fin connue, contour vert = réservé.
+- Les films ne reçoivent plus de date de fin inventée à +1 mois (ils disparaissent quand même des « à venir » 1 mois après leur sortie).
+- Paramètres : choix de la vue au démarrage pour Idées (Tirage / Liste) et À venir (Cartes / Liste / Calendrier), le même sur le téléphone et le PC.
+- Excel : nouvelle colonne « Heure » dans l'onglet Événements.
+- Les anciennes icônes sont rangées dans `icones/anciennes/`.
+
+## v1.0.0 — 2026-11-06
 Version stable : la migration depuis Google Sheet est terminée, toutes les données sont dans Firebase.
 - Nouvelle icône : un billet de sortie avec un « ? » sur fond corail doux, signée du tampon rond commun à mes applis (versions normale et Android « maskable »).
 

@@ -445,3 +445,49 @@ a.item{color:inherit;text-decoration:none}
 .fresume .dot{width:6px;height:6px;border-radius:50%;background:var(--orange);flex:none}
 .fresume.open{border-color:var(--line2)}
 .fpli{margin:0 0 6px;animation:rise .25s var(--ease) both}
+
+/* =========================================================
+   v1.3.0 : mini pop-up de présentation (toucher une carte)
+   ========================================================= */
+.evc,.card.pc,.item.adr{cursor:pointer}
+.overlay.centre{align-items:center;padding:16px}
+.pop{background:var(--bg);width:100%;max-width:380px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:up .3s var(--ease) both}
+.ptop{display:flex;gap:10px;padding:10px 10px 6px;align-items:flex-start}
+.pimg{position:relative;width:64px;height:64px;flex:none;border-radius:10px;overflow:hidden;background:var(--c);display:grid;place-items:center;font-size:26px}
+.pimg[data-c]{background:var(--p);width:52px;height:52px;font-size:22px}
+.pimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ptx{flex:1;min-width:0}
+.ptx .kicker{margin:0}
+.ptx h3{margin:1px 0 4px;font-size:16px;line-height:1.2;font-weight:600}
+.pbds{display:flex;flex-wrap:wrap;gap:4px}
+.pbds .badge{font-size:11px}
+.pbds .badge:not(.urgent):not(.soon):not(.resa):not(.adore){background:var(--line);color:var(--ink)}
+.badge.adore{background:var(--a2);color:var(--at2)}
+.pcoin{display:flex;gap:4px;flex:none}
+.pmini{width:28px;height:28px;border:0;border-radius:50%;background:var(--chipbg);color:var(--muted);display:grid;place-items:center;cursor:pointer;padding:0}
+.pmini.on{background:var(--line2);color:var(--ink)}
+.pmini svg{width:14px;height:14px}
+.pmenu{position:relative}
+.pdd{position:absolute;right:0;top:32px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.18);padding:4px;min-width:140px;z-index:3;animation:fade .15s ease both}
+.pdd button{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:8px 10px;border-radius:7px;font-size:13.5px;cursor:pointer;text-align:left}
+.pdd button:hover{background:var(--chipbg)}
+.pdd button svg{width:15px;height:15px}
+.pdd .sup{color:var(--coral)}
+.pinfo{padding:0 12px;font-size:12.5px;display:grid;gap:2px}
+.pinfo .prog{background:var(--line)}
+.pnotes{padding:4px 12px 0;font-size:12px;color:var(--muted);white-space:pre-line}
+.pbtns{display:flex;justify-content:space-around;padding:10px 6px 12px;margin-top:8px;border-top:1px solid var(--line)}
+.pb{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--ink);background:none;border:0;cursor:pointer;text-decoration:none;padding:0;min-width:64px}
+.pb i{width:40px;height:40px;border-radius:50%;background:var(--chipbg);display:grid;place-items:center;transition:transform .15s var(--ease)}
+.pb:active i{transform:scale(.9)}
+.pb i svg{width:18px;height:18px}
+.pb.p i{background:var(--orange);color:var(--dark)}
+.pb.r i{background:var(--a3);color:var(--at3)}
+.pb.on i{background:var(--a2);color:var(--at2)}
+.pb.r.on i{background:var(--ok);color:#fff}
+/* petite épingle sur une idée du tirage ou une adresse épinglée */
+.pinmark{color:var(--orange);display:grid;place-items:center}
+.pinmark svg{width:13px;height:13px}
+.pinmark svg path:first-child{fill:currentColor}
+.card.pc .pinmark{position:absolute;top:6px;right:6px}
+.item.adr .pinmark{flex:none}

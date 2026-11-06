@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.2.0";
+const VERSION = "v1.3.0";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -555,6 +555,12 @@ const ICON = {
   g_periode: svg('<circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/><path d="M7 12h10"/>'),
   g_sans: svg('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2"/>'),
   billet: svg('<path d="M4 8h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M9 12.5l2 2 4-4"/>'),
+  // mini pop-up
+  dots: svg('<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>'),
+  x: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+  trash: svg('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+  ouvrir: svg('<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'),
+  iti: svg('<path d="M3 11l18-8-8 18-2-8z"/>'),
   shuffle: svg('<path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/>'),
   edit: svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
   next: svg('<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>'),
@@ -628,14 +634,11 @@ function renderTirage(seg) {
 }
 
 // Petite carte : les 3 idées tiennent côte à côte sur un téléphone.
+// Pas de boutons : la toucher ouvre le mini pop-up (épingler, fait aujourd'hui, modifier…).
 function ideaCard(i) {
   const pin = epingle(i);
-  // épingler / modifier : petites icônes discrètes dans le coin
-  return `<div class="card pc ${pin ? "pinned" : ""}">
-    <div class="pacts">
-      <button class="pact ${pin ? "on" : ""}" data-act="pin" data-id="${esc(i.id)}" title="${pin ? "Désépingler" : "Épingler"}" aria-label="${pin ? "Désépingler" : "Épingler"}" aria-pressed="${pin}">${ICON.pin}</button>
-      <button class="pact" data-act="edit-idee" data-id="${esc(i.id)}" title="Modifier" aria-label="Modifier">${ICON.edit}</button>
-    </div>
+  return `<div class="card pc ${pin ? "pinned" : ""}" data-act="idee-pop" data-id="${esc(i.id)}">
+    ${pin ? `<span class="pinmark" aria-label="Épinglée">${ICON.pin}</span>` : ""}
     <div class="emo" data-c="${esc(i.cat)}">${catEmo(i.cat)}</div>
     ${grp(i) ? `<div class="gk">${esc(grp(i))}</div>` : ""}
     <h3>${esc(i.nom)}</h3>
@@ -784,20 +787,15 @@ function renderCal(vis) {
 const niveauEvt = e => e.niveau || niveauPrix(e.prix);
 const imageEvt = e => e.image ? `<img src="${esc(e.image)}" referrerpolicy="no-referrer" alt="" loading="lazy" onerror="this.remove()">` : "";
 
-// Carte compacte : image basse avec seulement les étiquettes (haut) et les boutons (bas),
-// puis titre sur 2 lignes, ligne de date avec l'icône de son genre, barre de temps restant, lieu · prix.
+// Carte compacte : image basse avec seulement les étiquettes, puis titre sur 2 lignes,
+// ligne de date avec l'icône de son genre, barre de temps restant, lieu · prix.
+// Pas de boutons : la toucher ouvre le mini pop-up.
 function evCard(e) {
   const [ic, quand] = dateLigne(e);
   const p = progression(e);
-  return `<article class="card evc ${reserve(e) ? "reserve" : ""}">
+  return `<article class="card evc ${reserve(e) ? "reserve" : ""}" data-act="ev-pop" data-id="${esc(e.id)}">
     <div class="cover" data-t="${esc(e.type)}"><span class="cemo">${typeEmo(e.type)}</span>${imageEvt(e)}
       <div class="bds">${badges(e)}</div>
-      <div class="pacts ev">
-        ${e.st.arch ? "" : `<button class="pact ${reserve(e) ? "on" : ""}" data-act="ev-resa" data-id="${esc(e.id)}" title="${reserve(e) ? "Plus réservé" : "Réservé"}" aria-label="${reserve(e) ? "Plus réservé" : "Réservé"}" aria-pressed="${reserve(e)}">${ICON.billet}</button>
-        <button class="pact" data-act="ev-done" data-id="${esc(e.id)}" title="Fait" aria-label="Fait">${ICON.check}</button>`}
-        <button class="pact" data-act="edit-evt" data-id="${esc(e.id)}" title="Modifier" aria-label="Modifier">${ICON.edit}</button>
-        ${e.lien ? `<a class="pact" href="${esc(e.lien)}" target="_blank" rel="noopener" title="Ouvrir la page" aria-label="Ouvrir la page">${ICON.next}</a>` : ""}
-      </div>
     </div>
     <div class="evbody">
       <h3>${esc(e.titre || "(sans titre)")}</h3>
@@ -807,10 +805,10 @@ function evCard(e) {
     </div></article>`;
 }
 
-// Mode liste : une ligne par événement, petite image à gauche (toucher la ligne = modifier)
+// Mode liste : une ligne par événement, petite image à gauche (toucher la ligne = mini pop-up)
 function evLigne(e) {
   const [ic, quand] = dateLigne(e);
-  return `<div class="item evl ${reserve(e) ? "reserve" : ""}" data-act="edit-evt" data-id="${esc(e.id)}">
+  return `<div class="item evl ${reserve(e) ? "reserve" : ""}" data-act="ev-pop" data-id="${esc(e.id)}">
     <div class="th" data-t="${esc(e.type)}"><span>${typeEmo(e.type)}</span>${imageEvt(e)}</div>
     <div class="tx"><b>${esc(e.titre || "(sans titre)")}</b><div class="quand">${ic}<span>${esc(quand)}</span></div><div class="meta">${esc(lieuPrix(e))}</div></div>
     <div class="dr">${badges(e)}</div></div>`;
@@ -919,12 +917,12 @@ function renderAdresses() {
 function adrLigne(a, dist) {
   const on = epingle(a);
   const meta = [a.style, a.ville].filter(Boolean).join(" · ");
-  return `<div class="item li adr" data-act="edit-adr" data-id="${esc(a.id)}"><div class="emo" data-c="${esc(a.cat)}">${adrEmo(a.cat)}</div>
+  // toucher la ligne : mini pop-up (Maps, itinéraire, épingler, modifier…)
+  return `<div class="item li adr" data-act="adr-pop" data-id="${esc(a.id)}"><div class="emo" data-c="${esc(a.cat)}">${adrEmo(a.cat)}</div>
     <div class="txt">${esc(a.nom)}${meta ? `<span class="gm">${esc(meta)}</span>` : ""}</div>
     ${a.statut === "Adoré" ? '<span class="heart" title="Adoré">♥</span>' : ""}
-    ${dist || a.prix ? `<span class="when">${esc(dist || a.prix)}</span>` : ""}
-    <a class="pact" href="${esc(mapsUrl(a))}" target="_blank" rel="noopener" title="Ouvrir dans Maps" aria-label="Ouvrir ${esc(a.nom)} dans Maps">${ICON.map}</a>
-    <button class="pact ${on ? "on" : ""}" data-act="apin" data-id="${esc(a.id)}" title="${on ? "Désépingler" : "Épingler"}" aria-label="${on ? "Désépingler" : "Épingler"} ${esc(a.nom)}" aria-pressed="${on}">${ICON.pin}</button></div>`;
+    ${on ? `<span class="pinmark" aria-label="Épinglée">${ICON.pin}</span>` : ""}
+    ${dist || a.prix ? `<span class="when">${esc(dist || a.prix)}</span>` : ""}</div>`;
 }
 
 function renderAdrListe(vis) {
@@ -1298,7 +1296,72 @@ function readForm() {
   return o;
 }
 
-function closeForm() { $("#modal").innerHTML = ""; form = null; }
+function closeForm() { $("#modal").innerHTML = ""; form = null; popup = null; }
+
+/* ---------- mini pop-up de présentation (toucher une carte ou une ligne) ---------- */
+// Les actions courantes en gros boutons ; Modifier et Supprimer rangés dans le menu « ⋯ ».
+let popup = null; // { kind, id, menu }
+function ouvrirPopup(kind, id) { popup = { kind, id, menu: false }; afficherPopup(); }
+const btnPop = (act, ic, label, cls) => `<button class="pb ${cls || ""}" data-act="${act}"><i>${ic}</i>${label}</button>`;
+const lienPop = (url, ic, label, cls) => `<a class="pb ${cls || ""}" href="${esc(url)}" target="_blank" rel="noopener"><i>${ic}</i>${label}</a>`;
+
+function afficherPopup() {
+  if (!popup) return;
+  const K = KINDS[popup.kind], o = S[K.arr].find(x => x.id === popup.id);
+  if (!o) return closeForm();
+  form = null;
+  let vignette, kicker = "", etiquettes = "", infos = [], notes = "", btns = [];
+  if (popup.kind === "evt") {
+    const e = Object.assign({ st: evState(o) }, o);
+    vignette = `<div class="pimg" data-t="${esc(e.type)}"><span>${typeEmo(e.type)}</span>${imageEvt(e)}</div>`;
+    kicker = e.type || "";
+    etiquettes = badges(e);
+    const [ic, quand] = dateLigne(e);
+    infos.push(`<div class="quand">${ic}<span>${esc(quand)}</span></div>`);
+    const p = progression(e);
+    if (p !== null) infos.push(`<div class="prog"><i style="width:${p}%"></i></div>`);
+    if (lieuPrix(e)) infos.push(`<div>${esc(lieuPrix(e))}</div>`);
+    if (e.lien) btns.push(lienPop(e.lien, ICON.ouvrir, "Ouvrir", "p"));
+    btns.push(btnPop("pop-resa", ICON.billet, reserve(e) ? "Réservé ✓" : "Réservé", reserve(e) ? "r on" : "r"));
+    btns.push(actif(e) ? btnPop("pop-fait", ICON.check, "Fait") : btnPop("pop-avoir", ICON.prev, "Remettre"));
+  } else if (popup.kind === "idee") {
+    vignette = `<div class="pimg" data-c="${esc(o.cat)}"><span>${catEmo(o.cat)}</span></div>`;
+    kicker = [o.cat, grp(o)].filter(Boolean).join(" · ");
+    if (o.derniere) infos.push(`<div>Dernière fois : ${esc(fmt(o.derniere))}</div>`);
+    notes = o.notes || "";
+    btns.push(btnPop("pop-pin", ICON.pin, epingle(o) ? "Épinglée" : "Épingler", epingle(o) ? "on" : ""));
+    btns.push(btnPop("pop-faitidee", ICON.check, o.derniere === today() ? "Fait aujourd’hui ✓" : "Fait aujourd’hui", o.derniere === today() ? "r on" : ""));
+  } else {
+    vignette = `<div class="pimg" data-c="${esc(o.cat)}"><span>${adrEmo(o.cat)}</span></div>`;
+    kicker = [o.cat, o.style].filter(Boolean).join(" · ");
+    if (o.statut === "Adoré") etiquettes = '<span class="badge adore">♥ Adoré</span>';
+    const ligne = [o.adresse || o.ville, o.prix].filter(Boolean).join(" · ");
+    if (ligne) infos.push(`<div>${esc(ligne)}</div>`);
+    notes = o.notes || "";
+    btns.push(lienPop(mapsUrl(o), ICON.map, "Maps", "p"));
+    btns.push(lienPop(itineraire(o), ICON.iti, "Itinéraire"));
+    btns.push(btnPop("pop-pin", ICON.pin, epingle(o) ? "Épinglée" : "Épingler", epingle(o) ? "on" : ""));
+  }
+  const titre = o.titre || o.nom || "(sans titre)";
+  const menu = `<span class="pmenu"><button class="pmini ${popup.menu ? "on" : ""}" data-act="pop-menu" aria-label="Plus d’actions" aria-expanded="${popup.menu}">${ICON.dots}</button>
+    ${popup.menu ? `<div class="pdd"><button data-act="pop-edit">${ICON.edit}Modifier</button><button class="sup" data-act="pop-del">${ICON.trash}Supprimer</button></div>` : ""}</span>`;
+  $("#modal").innerHTML = `<div class="overlay centre" data-act="close-bg"><div class="pop" role="dialog" aria-label="${esc(titre)}">
+    <div class="ptop">${vignette}
+      <div class="ptx">${kicker ? `<div class="kicker">${esc(kicker)}</div>` : ""}<h3>${esc(titre)}</h3>${etiquettes ? `<div class="pbds">${etiquettes}</div>` : ""}</div>
+      <div class="pcoin">${menu}<button class="pmini" data-act="close" aria-label="Fermer">${ICON.x}</button></div></div>
+    ${infos.length ? `<div class="pinfo">${infos.join("")}</div>` : ""}
+    ${notes ? `<div class="pnotes">${esc(notes)}</div>` : ""}
+    <div class="pbtns">${btns.join("")}</div>
+  </div></div>`;
+}
+
+// Change le statut d'un événement depuis le pop-up
+async function statutPop(statut, message, fermer) {
+  const ev = S.evts.find(x => x.id === popup.id);
+  const saved = await call("saveEvt", Object.assign({}, ev, { statut }));
+  Object.assign(ev, saved); render(); toast(message);
+  if (fermer) closeForm(); else afficherPopup();
+}
 
 async function saveForm(btn) {
   const o = readForm();
@@ -1324,9 +1387,12 @@ async function saveForm(btn) {
 
 // Suppression immédiate, avec « Annuler » pendant quelques secondes.
 async function deleteForm(btn) {
-  const kind = form.kind, K = KINDS[kind], id = form.base.id;
-  const avant = S[K.arr].find(x => x.id === id);
   btn.disabled = true;
+  await supprimer(form.kind, form.base.id);
+}
+async function supprimer(kind, id) {
+  const K = KINDS[kind];
+  const avant = S[K.arr].find(x => x.id === id);
   await call(K.del, id);
   S[K.arr] = S[K.arr].filter(x => x.id !== id);
   if (kind === "idee") S.picks = S.picks.filter(x => x !== id);
@@ -1702,6 +1768,27 @@ document.addEventListener("click", async e => {
     case "adr-extract": extractAdr($("#aurl").value); break;
     case "new-adr": openForm("adr", { statut: "À tester" }); break;
     case "edit-adr": openForm("adr", S.adresses.find(x => x.id === id)); break;
+    // mini pop-up : ouvrir, menu ⋯, et ses actions
+    case "ev-pop": ouvrirPopup("evt", id); break;
+    case "idee-pop": ouvrirPopup("idee", id); break;
+    case "adr-pop": ouvrirPopup("adr", id); break;
+    case "pop-menu": popup.menu = !popup.menu; afficherPopup(); break;
+    case "pop-edit": { const { kind, id: pid } = popup; popup = null; openForm(kind, S[KINDS[kind].arr].find(x => x.id === pid)); break; }
+    case "pop-del": { const { kind, id: pid } = popup; closeForm(); supprimer(kind, pid); break; }
+    case "pop-resa": statutPop(reserve(S.evts.find(x => x.id === popup.id)) ? "À voir" : "Réservé", "Statut mis à jour"); break;
+    case "pop-fait": statutPop("Fait", "Noté comme fait", true); break;
+    case "pop-avoir": statutPop("À voir", "Remis dans les à venir"); break;
+    case "pop-pin": {
+      const p = popup;
+      await (p.kind === "idee" ? togglePin(p.id) : togglePinAdr(p.id));
+      popup = p; afficherPopup(); break;
+    }
+    case "pop-faitidee": {
+      const i = S.idees.find(x => x.id === popup.id);
+      i.derniere = i.derniere === today() ? "" : today();
+      await call("saveIdee", i);
+      render(); toast(i.derniere ? "Noté : fait aujourd’hui" : "Date retirée"); afficherPopup(); break;
+    }
     case "apin": togglePinAdr(id); break;
     case "locate": locate(el); break;
     case "parse-texte": completerTexte(el); break;
@@ -1770,7 +1857,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden) saveN
 document.addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.id === "url") extract(e.target.value);
   if (e.key === "Enter" && e.target.id === "aurl") extractAdr(e.target.value);
-  if (e.key === "Escape" && form) closeForm();
+  if (e.key === "Escape" && (form || popup)) closeForm();
 });
 
 // Le « gardien » hors ligne (service worker) : garde une copie des fichiers de l'appli,

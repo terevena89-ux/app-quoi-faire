@@ -1,5 +1,11 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.3.0 — 2026-11-06
+- Plus de boutons sur les cartes et les lignes : toucher une carte (événement, idée du tirage, adresse) ouvre un mini pop-up de présentation.
+- Dans le pop-up : les actions courantes en gros boutons (événement : Ouvrir, Réservé, Fait ; idée : Épingler, Fait aujourd'hui ; adresse : Maps, Itinéraire, Épingler), et Modifier / Supprimer rangés dans le menu « ⋯ ».
+- Supprimer depuis le pop-up : immédiat, avec « Annuler » quelques secondes.
+- Petite épingle orange sur les idées et adresses épinglées.
+
 ## v1.2.0 — 2026-11-06
 - Filtres repliés (Idées, À venir, Adresses) derrière une petite pastille qui résume les choix ; un point orange signale un filtre actif. On la touche pour déplier.
 - Pastilles plus discrètes : fines, sans contour, grisées.

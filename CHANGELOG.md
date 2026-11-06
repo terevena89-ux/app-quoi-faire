@@ -1,5 +1,9 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.0 — 2026-11-06
+Version stable : la migration depuis Google Sheet est terminée, toutes les données sont dans Firebase.
+- Nouvelle icône : un billet de sortie avec un « ? » sur fond corail doux, signée du tampon rond commun à mes applis (versions normale et Android « maskable »).
+
 ## v0.2 — 2026-11-05
 - Lecteur de liens branché : coller le lien d'un événement ou d'un lieu Google Maps remplit la fiche tout seul, et les adresses sont placées sur la carte.
 - Correction : « nouveaux » au lieu de « nouveaus » dans le résumé d'import.

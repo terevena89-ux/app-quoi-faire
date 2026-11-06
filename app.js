@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v0.2";
+const VERSION = "v1.0";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).

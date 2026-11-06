@@ -4,12 +4,12 @@
 // même sans réseau. (Les données, elles, sont gérées par Firebase.)
 // À CHAQUE NOUVELLE VERSION : changer le numéro ci-dessous.
 // =========================================================
-const CACHE = "quoi-faire-v0.2";
+const CACHE = "quoi-faire-v1.0";
 
 // Fichiers de l'appli à garder dès l'installation
 const FICHIERS = [
   "./", "index.html", "style.css", "app.js", "excel-style.js", "firebase-config.js",
-  "manifest.json", "icones/icon-192.png", "icones/icon-512.png"
+  "manifest.json", "icones/icone.svg", "icones/icone-192.png", "icones/icone-512.png"
 ];
 
 self.addEventListener("install", e => {

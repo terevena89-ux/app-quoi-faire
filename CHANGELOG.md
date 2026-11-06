@@ -1,5 +1,11 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.3.1 — 2026-11-06
+- Nouveaux thèmes « Suisse » (papier et orange) et « Suisse nuit » (nuit et corail) : une seule police neutre (Inter), une seule couleur d'accent, cadres blancs fins, sans emoji ni pastilles.
+- « Automatique » passe à Suisse le jour et Suisse nuit le soir. Dure Vie, Pastel et Sombre restent au choix.
+- Paramètres : le choix du thème a sa propre section (« Thème › »).
+- Titres de page avec compteur (« À venir · 15 en cours ») dans les thèmes Suisse.
+
 ## v1.3.0 — 2026-11-06
 - Plus de boutons sur les cartes et les lignes : toucher une carte (événement, idée du tirage, adresse) ouvre un mini pop-up de présentation.
 - Dans le pop-up : les actions courantes en gros boutons (événement : Ouvrir, Réservé, Fait ; idée : Épingler, Fait aujourd'hui ; adresse : Maps, Itinéraire, Épingler), et Modifier / Supprimer rangés dans le menu « ⋯ ».

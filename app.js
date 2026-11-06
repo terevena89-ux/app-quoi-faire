@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.3.0";
+const VERSION = "v1.3.1";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -582,7 +582,7 @@ const ICON = {
 // acc : couleur d'accent de la ligne (1 à 5), pour distinguer les filtres d'un coup d'œil
 function chipRow(label, key, opts, store, icon, acc) {
   return `<div class="row" data-acc="${acc || 1}"><span class="lbl">${label}</span><div class="chips">${opts.map(o =>
-    `<button class="chip ${store[key] === o ? "on" : ""}" data-act="${store === S.f ? "f" : store === S.af ? "af" : "ef"}" data-k="${key}" data-v="${esc(o)}">${icon && icon(o) ? icon(o) + " " : ""}${esc(o)}</button>`).join("")}</div></div>`;
+    `<button class="chip ${store[key] === o ? "on" : ""}" data-act="${store === S.f ? "f" : store === S.af ? "af" : "ef"}" data-k="${key}" data-v="${esc(o)}">${icon && icon(o) ? `<span class="emoji">${icon(o)} </span>` : ""}${esc(o)}</button>`).join("")}</div></div>`;
 }
 
 // Filtres repliés derrière une petite pastille qui résume les choix (en gras : un vrai choix,
@@ -610,7 +610,7 @@ function renderIdees() {
   const quand = { Soirée: "ce soir", "Demi-journée": "cet aprèm", Journée: "aujourd’hui" }[S.f.duree] || "aujourd’hui";
   const seg = [["tirage", ICON.dice, "Tirage"], ["liste", ICON.list, "Liste"]].map(([m, ic, l]) =>
     `<button class="${S.mode === m ? "on" : ""}" data-act="mode" data-v="${m}" aria-pressed="${S.mode === m}">${ic} ${l}</button>`).join("");
-  return `<section class="hero"><h2>On fait quoi ${quand}&nbsp;?</h2></section>` +
+  return `<section class="hero"><h2>On fait quoi ${quand}&nbsp;?</h2><span class="hcount">${plur(S.idees.length, "idée")}</span></section>` +
     (urgents.length ? `<div class="alert"><div class="eyebrow">À ne pas rater</div>${urgents.map(e =>
       `<div class="ln"><span>${esc(e.titre)}</span><strong>${esc(e.st.label)}</strong></div>`).join("")}</div>` : "") +
     blocFiltres("idees", [
@@ -640,6 +640,7 @@ function ideaCard(i) {
   return `<div class="card pc ${pin ? "pinned" : ""}" data-act="idee-pop" data-id="${esc(i.id)}">
     ${pin ? `<span class="pinmark" aria-label="Épinglée">${ICON.pin}</span>` : ""}
     <div class="emo" data-c="${esc(i.cat)}">${catEmo(i.cat)}</div>
+    <div class="kcat">${esc(i.cat || "")}</div>
     ${grp(i) ? `<div class="gk">${esc(grp(i))}</div>` : ""}
     <h3>${esc(i.nom)}</h3>
     <div class="ptags">${[i.lieu, i.budget].filter(Boolean).map(esc).join(" · ")}</div>
@@ -655,7 +656,9 @@ function renderEvts() {
   // les réservés remontent en tête (le tri par date est gardé à l'intérieur de chaque groupe)
   const now = act.filter(e => !e.debut || e.debut <= lim).sort((a, b) => reserve(b) - reserve(a));
   const later = act.filter(e => e.debut && e.debut > lim).sort((a, b) => reserve(b) - reserve(a));
-  return `<div class="add"><input type="url" id="url" placeholder="Colle le lien d’une expo, d’un concert, d’un film…" inputmode="url">
+  // titre de page (affiché seulement par certains thèmes, ex. Suisse)
+  return `<div class="ptitle"><h2>À venir</h2><span>${act.length} en cours</span></div>
+    <div class="add"><input type="url" id="url" placeholder="Colle le lien d’une expo, d’un concert, d’un film…" inputmode="url">
       <button class="btn primary" data-act="extract" id="go">Ajouter</button></div>
     <button class="link" data-act="new-evt">ou remplir à la main</button>
     <div style="height:10px"></div>
@@ -798,6 +801,7 @@ function evCard(e) {
       <div class="bds">${badges(e)}</div>
     </div>
     <div class="evbody">
+      <div class="kline"><span>${esc(e.type || "")}</span>${reserve(e) ? '<span class="ok">✓ Réservé</span>' : `<span class="${e.st.cls || ""}">${esc(e.st.label)}</span>`}</div>
       <h3>${esc(e.titre || "(sans titre)")}</h3>
       <div class="quand">${ic}<span>${esc(quand)}</span></div>
       ${p !== null ? `<div class="prog"><i style="width:${p}%"></i></div>` : ""}
@@ -827,7 +831,7 @@ function renderListe(seg) {
   const cats = ["Toutes"].concat([...new Set(S.idees.map(i => i.cat).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")));
   const actif = S.tri !== "cat" || Object.keys(LF_DEFAUT).some(k => S.lf[k] !== LF_DEFAUT[k]);
   const ligne = (label, k, opts, icone) => `<div class="row"><span class="lbl">${label}</span><div class="chips">${opts.map(o =>
-    `<button class="chip ${S.lf[k] === o ? "on" : ""}" data-act="lf" data-k="${k}" data-v="${esc(o)}">${icone && icone(o) ? icone(o) + " " : ""}${esc(o)}</button>`).join("")}</div></div>`;
+    `<button class="chip ${S.lf[k] === o ? "on" : ""}" data-act="lf" data-k="${k}" data-v="${esc(o)}">${icone && icone(o) ? `<span class="emoji">${icone(o)} </span>` : ""}${esc(o)}</button>`).join("")}</div></div>`;
   return `<div class="modebar"><div class="seg">${seg}</div>
       <input type="search" id="q" placeholder="Rechercher…" value="${esc(S.q)}">
       <button class="ibtn fbtn ${S.filt ? "open" : ""} ${actif ? "actif" : ""}" data-act="filt" title="Trier et filtrer" aria-label="Trier et filtrer">${ICON.filtre}</button></div>
@@ -869,7 +873,7 @@ function renderItems() {
   let cat = null;
   const reste = unites.map(u => {
     // en tri par catégorie, un petit intertitre à chaque nouvelle catégorie
-    const titre = S.tri === "cat" && u.cat !== cat ? `<div class="ghead">${catEmo(u.cat)} ${esc(u.cat || "Sans catégorie")}</div>` : "";
+    const titre = S.tri === "cat" && u.cat !== cat ? `<div class="ghead"><span class="emoji">${catEmo(u.cat)} </span>${esc(u.cat || "Sans catégorie")}</div>` : "";
     cat = u.cat;
     if (!u.g) return titre + ligne(u.i);
     const ouvert = !!S.open[u.g] || !!q;
@@ -879,7 +883,7 @@ function renderItems() {
       (ouvert ? u.items.map(i => ligne(i, "sub")).join("") : "");
   }).join("");
   return `<div class="count">${plur(items.length, "idée")}</div>` +
-    (pins.length ? `<div class="pinbloc"><div class="ghead">📌 Épinglées</div>${pins.map(i => ligne(i, "", true)).join("")}</div>` : "") +
+    (pins.length ? `<div class="pinbloc"><div class="ghead"><span class="emoji">📌 </span>Épinglées</div>${pins.map(i => ligne(i, "", true)).join("")}</div>` : "") +
     (pins.length && unites.length && S.tri !== "cat" ? '<div class="ghead">Toutes les autres</div>' : "") + reste;
 }
 
@@ -900,7 +904,8 @@ const estLienMaps = s => /maps[.]app[.]goo[.]gl|goo[.]gl[/]maps|google[.][a-z.]+
 function renderAdresses() {
   const vis = adrVisibles();
   const cats = ["Toutes"].concat(adrCats().filter(c => S.adresses.some(a => a.cat === c)));
-  return `<div class="add"><input type="url" id="aurl" placeholder="Colle un lien Google Maps…" inputmode="url">
+  return `<div class="ptitle"><h2>Adresses</h2><span>${S.adresses.length}</span></div>
+    <div class="add"><input type="url" id="aurl" placeholder="Colle un lien Google Maps…" inputmode="url">
       <button class="btn primary" data-act="adr-extract" id="ago">Ajouter</button></div>
     <button class="link" data-act="new-adr">ou remplir à la main</button>
     <div style="height:10px"></div>
@@ -934,9 +939,9 @@ function renderAdrListe(vis) {
   const autres = vis.filter(a => !epingle(a)).sort((a, b) => (ordre.indexOf(a.cat) - ordre.indexOf(b.cat)) || nom(a, b));
   let cat = null;
   return `<div class="count">${plur(vis.length, "adresse")}</div>` +
-    (pins.length ? `<div class="pinbloc"><div class="ghead">📌 Épinglées</div>${pins.map(a => adrLigne(a)).join("")}</div>` : "") +
+    (pins.length ? `<div class="pinbloc"><div class="ghead"><span class="emoji">📌 </span>Épinglées</div>${pins.map(a => adrLigne(a)).join("")}</div>` : "") +
     autres.map(a => {
-      const titre = a.cat !== cat ? `<div class="ghead">${adrEmo(a.cat)} ${esc(a.cat || "Autres")}</div>` : "";
+      const titre = a.cat !== cat ? `<div class="ghead"><span class="emoji">${adrEmo(a.cat)} </span>${esc(a.cat || "Autres")}</div>` : "";
       cat = a.cat;
       return titre + adrLigne(a);
     }).join("");
@@ -1453,7 +1458,9 @@ async function completerTexte(btn) {
 
 /* ---------- 6. Apparence ---------- */
 const THEMES = [
-  { id: "auto", nom: "Automatique", desc: "Dure Vie le jour, Sombre la nuit (selon l’appareil)", sw: ["#f4f3f7", "#ff641f", "#121019", "#283463"] },
+  { id: "auto", nom: "Automatique", desc: "Suisse le jour, Suisse nuit le soir (selon l’appareil)", sw: ["#f4f3f0", "#ec5a2e", "#141518", "#ff7a4d"] },
+  { id: "suisse", nom: "Suisse", desc: "Papier et orange, épuré", sw: ["#f4f3f0", "#ffffff", "#161616", "#ec5a2e"] },
+  { id: "suissenuit", nom: "Suisse nuit", desc: "Nuit et corail", sw: ["#141518", "#1e2024", "#ededea", "#ff7a4d"] },
   { id: "durevie", nom: "Dure Vie", desc: "Encre, pervenche et orange", sw: ["#f4f3f7", "#b3c6f7", "#171520", "#ff641f"] },
   { id: "pastel", nom: "Pastel", desc: "Doux et arrondi, comme avant", sw: ["#fbf6f1", "#fde4dc", "#fff1d6", "#ec8a72"] },
   { id: "sombre", nom: "Sombre", desc: "Dure Vie de nuit", sw: ["#121019", "#283463", "#f1eff6", "#ff641f"] }
@@ -1462,7 +1469,7 @@ const SOMBRE = window.matchMedia("(prefers-color-scheme: dark)");
 function choixTheme() { try { return localStorage.getItem("qf-theme") || "auto"; } catch (e) { return "auto"; } }
 function appliquerTheme() {
   const c = choixTheme();
-  document.documentElement.dataset.theme = c === "auto" ? (SOMBRE.matches ? "sombre" : "durevie") : c;
+  document.documentElement.dataset.theme = c === "auto" ? (SOMBRE.matches ? "suissenuit" : "suisse") : c;
 }
 // le téléphone passe en mode sombre (le soir, par exemple) : on suit si « Automatique »
 SOMBRE.addEventListener("change", appliquerTheme);
@@ -1479,16 +1486,28 @@ let importEnAttente = null;
 const ligneReglage = (label, k, opts) => `<div class="row"><span class="lbl">${label}</span><div class="chips">${opts.map(([v, l]) =>
   `<button class="chip ${S.reglages[k] === v ? "on" : ""}" data-act="reg" data-k="${k}" data-v="${v}">${l}</button>`).join("")}</div></div>`;
 
-// Paramètres : apparence, vues de départ, Excel (export / import), compte et version
-function openSettings() {
-  form = null; importEnAttente = null;
+// Choix du thème : un écran à part, ouvert depuis Paramètres
+function openThemes() {
+  form = null;
   const cur = choixTheme();
   $("#modal").innerHTML = `<div class="overlay" data-act="close-bg"><div class="sheet">
-    <h2>Paramètres</h2>
-    <div class="lbl">Apparence</div>
+    <button class="link" data-act="settings">‹ Paramètres</button>
+    <h2>Thème</h2>
     <div class="themes">${THEMES.map(t => `<button class="theme ${t.id === cur ? "on" : ""}" data-act="set-theme" data-v="${t.id}">
       <span class="swatch">${t.sw.map(c => `<i style="background:${c}"></i>`).join("")}</span>
       <span><b>${t.nom}</b><small>${t.desc}</small></span></button>`).join("")}</div>
+    <div class="foot"><span></span><button class="btn" data-act="close">Fermer</button></div>
+  </div></div>`;
+}
+
+// Paramètres : thème, vues de départ, Excel (export / import), compte et version
+function openSettings() {
+  form = null; importEnAttente = null;
+  const t = THEMES.find(x => x.id === choixTheme()) || THEMES[0];
+  $("#modal").innerHTML = `<div class="overlay" data-act="close-bg"><div class="sheet">
+    <h2>Paramètres</h2>
+    <div class="lbl">Apparence</div>
+    <button class="setrow card" data-act="themes"><span>Thème</span><span class="meta">${esc(t.nom)} ›</span></button>
     ${uid ? `<div class="lbl" style="margin-top:22px">Affichage au démarrage</div>
     <div class="card">${ligneReglage("Idées", "vueIdees", [["tirage", "Tirage"], ["liste", "Liste"]])}
       ${ligneReglage("À venir", "vueEvts", [["Cartes", "Cartes"], ["Liste", "Liste"], ["Calendrier", "Calendrier"]])}
@@ -1823,6 +1842,7 @@ document.addEventListener("click", async e => {
     case "archive": S.archive = !S.archive; render(); break;
     case "view": S.view = el.dataset.v; render(true); break;
     case "settings": openSettings(); break;
+    case "themes": openThemes(); break;
     case "new-src": openForm("src", { cat: "" }); break;
     case "edit-src": openForm("src", S.sources.find(x => x.id === id)); break;
     case "open-cat": openCat(el.dataset.v); break;

@@ -491,3 +491,125 @@ a.item{color:inherit;text-decoration:none}
 .pinmark svg path:first-child{fill:currentColor}
 .card.pc .pinmark{position:absolute;top:6px;right:6px}
 .item.adr .pinmark{flex:none}
+
+/* =========================================================
+   v1.3.1 : thèmes « Suisse » (papier et orange) et « Suisse nuit »
+   Typographie neutre (Inter), une seule couleur d'accent, cadres blancs fins.
+   ========================================================= */
+/* éléments ajoutés pour ce thème, cachés dans les autres */
+.ptitle,.kcat,.kline,.hcount{display:none}
+.setrow{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;cursor:pointer;font-weight:600}
+
+/* couleurs */
+[data-theme="suisse"]{color-scheme:light;--bg:#f4f3f0;--card:#fff;--ink:#161616;--on-ink:#fff;--dark:#161616;--muted:#6e6e6e;
+  --line:rgba(22,22,22,.10);--line2:rgba(22,22,22,.18);--orange:#ec5a2e;--coral:#d2491f;--ok:#1f7a50;--sky:rgba(22,22,22,.06);
+  --peri:transparent;--header:rgba(244,243,240,.92);--hero-line:transparent;--focus:rgba(236,90,46,.22);--case:uppercase;
+  --panel:#fff;--on-panel:#161616;--panel-muted:#6e6e6e;--panel-line:rgba(22,22,22,.10);--panel-btn:rgba(22,22,22,.18);
+  --chipbg:rgba(22,22,22,.05);--acc-bg:rgba(236,90,46,.12);--acc-t:#b8401b;
+  --display:"Inter",Helvetica,Arial,sans-serif}
+[data-theme="suissenuit"]{color-scheme:dark;--bg:#141518;--card:#1e2024;--ink:#ededea;--on-ink:#141518;--dark:#141518;--muted:#9a9a9f;
+  --line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);--orange:#ff7a4d;--coral:#ff8f6a;--ok:#5cc28f;--sky:rgba(255,255,255,.08);
+  --peri:transparent;--header:rgba(20,21,24,.92);--hero-line:transparent;--focus:rgba(255,122,77,.3);--case:uppercase;
+  --panel:#1e2024;--on-panel:#ededea;--panel-muted:#9a9a9f;--panel-line:rgba(255,255,255,.09);--panel-btn:rgba(255,255,255,.18);
+  --chipbg:rgba(255,255,255,.07);--acc-bg:rgba(255,122,77,.18);--acc-t:#ff9c78;
+  --display:"Inter",Helvetica,Arial,sans-serif}
+
+/* typographie : une seule police, la hiérarchie par la taille et la graisse */
+[data-theme^="suisse"] body{font-family:"Inter",Helvetica,Arial,sans-serif;letter-spacing:-.005em}
+[data-theme^="suisse"] h1{font-size:22px;font-weight:700;letter-spacing:-.03em;text-transform:none}
+[data-theme^="suisse"] .sub{font-family:"Inter",sans-serif;font-size:11px;font-weight:500;letter-spacing:.06em}
+[data-theme^="suisse"] .lbl,[data-theme^="suisse"] .kicker,[data-theme^="suisse"] .count,[data-theme^="suisse"] .ghead,[data-theme^="suisse"] .eyebrow,
+[data-theme^="suisse"] .field label,[data-theme^="suisse"] .dow,[data-theme^="suisse"] .item .when{font-family:"Inter",sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.08em}
+[data-theme^="suisse"] .sheet h2,[data-theme^="suisse"] .calhead b,[data-theme^="suisse"] .notesbar b,[data-theme^="suisse"] .dayhead{font-family:"Inter",sans-serif;text-transform:none;letter-spacing:-.03em;font-weight:700}
+[data-theme^="suisse"] .emoji,[data-theme^="suisse"] .emo,[data-theme^="suisse"] .cemo,[data-theme^="suisse"] .evl .th span,[data-theme^="suisse"] .pimg span,[data-theme^="suisse"] .empty .big{display:none}
+
+/* en-tête : boutons ronds blancs, onglets dans un cadre (onglet actif foncé) */
+[data-theme^="suisse"] header{border-bottom:0}
+[data-theme^="suisse"] .rbtn{background:var(--card);color:var(--ink);box-shadow:0 0 0 1px var(--line2)}
+[data-theme^="suisse"] .rbtn.on{background:var(--ink);color:var(--on-ink)}
+[data-theme^="suisse"] .tabs{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:3px}
+[data-theme^="suisse"] .tab{border-radius:9px}
+[data-theme^="suisse"] .tab.on{background:var(--ink);color:var(--on-ink)}
+
+/* titres de page : grand, serré, avec un compteur à droite */
+[data-theme^="suisse"] .ptitle{display:flex;align-items:baseline;justify-content:space-between;margin:4px 0 10px}
+[data-theme^="suisse"] .ptitle h2,[data-theme^="suisse"] .hero h2{margin:0;font-size:26px;font-weight:700;letter-spacing:-.04em;line-height:1.05}
+[data-theme^="suisse"] .ptitle span,[data-theme^="suisse"] .hcount{display:block;font-size:12px;color:var(--muted);white-space:nowrap}
+[data-theme^="suisse"] .hero{background:none;border:0;margin:4px 0 10px;padding:0;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+[data-theme^="suisse"] .hero.mini .eyebrow{color:var(--muted)}
+
+/* champs et boutons : cadres fins, coins doux */
+[data-theme^="suisse"] input[type=url],[data-theme^="suisse"] input[type=text],[data-theme^="suisse"] input[type=search],
+[data-theme^="suisse"] input[type=date],[data-theme^="suisse"] input[type=time],[data-theme^="suisse"] select,[data-theme^="suisse"] textarea{border-radius:10px;border-color:var(--line2)}
+[data-theme^="suisse"] .btn{border-radius:10px;border-color:var(--line2)}
+[data-theme^="suisse"] .btn.primary{background:var(--orange);border-color:var(--orange);color:#fff}
+[data-theme="suissenuit"] .btn.primary{color:var(--dark)}
+[data-theme^="suisse"] .link{text-decoration-color:var(--orange);text-decoration-thickness:1.5px}
+
+/* bascules de vue et filtres : une seule couleur d'accent, sans noir */
+[data-theme^="suisse"] .seg{background:var(--chipbg);border:0;border-radius:9px}
+[data-theme^="suisse"] .seg button{border-radius:7px}
+[data-theme^="suisse"] .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+[data-theme^="suisse"] .chip{border-radius:7px}
+[data-theme^="suisse"] .chip.on,[data-theme^="suisse"] [data-acc] .chip.on{background:var(--acc-bg);color:var(--acc-t)}
+[data-theme^="suisse"] .fresume{border-radius:9px;background:var(--card);border-color:var(--line2)}
+
+/* cartes : blanches, contour fin, sans ombre */
+[data-theme^="suisse"] .card,[data-theme^="suisse"] .fpanel{border-radius:12px;border:1px solid var(--line);box-shadow:none}
+[data-theme^="suisse"] .alert{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px}
+[data-theme^="suisse"] .alert .eyebrow{color:var(--orange)}
+[data-theme^="suisse"] .alert .ln strong{font-family:"Inter",sans-serif;font-size:12.5px;text-transform:none;letter-spacing:0;color:var(--ink)}
+/* tirage : libellé de catégorie à la place de l'emoji */
+[data-theme^="suisse"] .kcat{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+[data-theme^="suisse"] .pc h3{font-size:13.5px;letter-spacing:-.015em}
+[data-theme^="suisse"] .card.pc.pinned{border-color:var(--orange);box-shadow:none}
+/* cartes d'événements : image, puis « TYPE · compte à rebours », titre, date */
+[data-theme^="suisse"] .evc{background:var(--card);color:var(--ink);border-color:var(--line)}
+[data-theme^="suisse"] .evc .cover{height:88px;background:var(--chipbg)}
+[data-theme^="suisse"] .evc .cover .bds{display:none}
+[data-theme^="suisse"] .evc.reserve{box-shadow:0 0 0 1.5px var(--ok)}
+[data-theme^="suisse"] .kline{display:flex;justify-content:space-between;gap:6px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap;overflow:hidden}
+[data-theme^="suisse"] .kline .urgent{color:var(--orange)}
+[data-theme^="suisse"] .kline .ok{color:var(--ok)}
+[data-theme^="suisse"] .evc .evbody h3{letter-spacing:-.015em}
+[data-theme^="suisse"] .evinfo,[data-theme^="suisse"] .quand{color:var(--muted)}
+[data-theme^="suisse"] .evc .quand{color:var(--ink);font-weight:500}
+[data-theme^="suisse"] .prog{background:var(--line)}
+[data-theme^="suisse"] .prog i{background:var(--ink)}
+/* étiquettes : plus de pastilles, juste du texte en capitales */
+[data-theme^="suisse"] .badge{background:none;padding:0;color:var(--muted);font-family:"Inter",sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.08em}
+[data-theme^="suisse"] .badge.urgent,[data-theme^="suisse"] .badge.adore{color:var(--orange);background:none}
+[data-theme^="suisse"] .badge.soon{background:none}
+[data-theme^="suisse"] .badge.resa{color:var(--ok);background:none}
+[data-theme^="suisse"] .evl .badge:not(.urgent):not(.soon):not(.resa),[data-theme^="suisse"] .pbds .badge:not(.urgent):not(.soon):not(.resa):not(.adore){background:none;color:var(--muted)}
+/* listes : cadres blancs fins */
+[data-theme^="suisse"] .item.evl{border-radius:12px;border-color:var(--line)}
+[data-theme^="suisse"] .evl .th{background:var(--chipbg)}
+[data-theme^="suisse"] .item.evl.reserve{border-color:var(--ok);box-shadow:none}
+[data-theme^="suisse"] .item.li{padding:8px 4px}
+[data-theme^="suisse"] .item.li .txt{font-weight:600;letter-spacing:-.015em}
+[data-theme^="suisse"] .pinbloc{border-radius:12px;border-color:var(--orange);background:var(--card)}
+/* pop-up, fiches et calendrier */
+[data-theme^="suisse"] .pop{border-radius:14px;border:1px solid var(--line);background:var(--card)}
+[data-theme^="suisse"] .pimg{background:var(--chipbg);width:56px;height:56px}
+[data-theme^="suisse"] .pimg[data-c]{display:none}
+[data-theme^="suisse"] .ptx h3{font-size:18px;font-weight:700;letter-spacing:-.03em}
+[data-theme^="suisse"] .pb i{background:var(--chipbg)}
+[data-theme^="suisse"] .pb.p i{background:var(--ink);color:var(--on-ink)}
+[data-theme^="suisse"] .pb.on i,[data-theme^="suisse"] .pb.r i{background:var(--acc-bg);color:var(--acc-t)}
+[data-theme^="suisse"] .pb.r.on i{background:var(--ok);color:#fff}
+[data-theme^="suisse"] .sheet{background:var(--bg)}
+[data-theme^="suisse"] .infos{background:var(--chipbg);color:var(--ink)}
+[data-theme^="suisse"] .cal{border-radius:12px}
+[data-theme^="suisse"] .day{border-radius:8px;font-family:"Inter",sans-serif;font-size:13px;font-weight:600}
+[data-theme^="suisse"] .day.today{border-color:var(--orange)}
+[data-theme^="suisse"] .day.sel{background:var(--ink);color:var(--on-ink)}
+[data-theme^="suisse"] .theme{border-radius:12px}
+[data-theme^="suisse"] .fab{border-radius:12px;box-shadow:0 6px 18px rgba(236,90,46,.3)}
+[data-theme^="suisse"] .toast{border-radius:12px}
+[data-theme^="suisse"] .sync{font-family:"Inter",sans-serif}
+/* libellé de carte : le type se coupe, le compte à rebours reste entier */
+[data-theme^="suisse"] .kline span:first-child{overflow:hidden;text-overflow:ellipsis;min-width:0}
+[data-theme^="suisse"] .kline span:last-child{flex:none}
+/* bascules de vue (Cartes / Liste / Calendrier…) : neutres, comme un interrupteur */
+[data-theme^="suisse"] .row:not([data-acc]) .chip.on{background:var(--card);color:var(--ink);box-shadow:0 0 0 1px var(--line2)}

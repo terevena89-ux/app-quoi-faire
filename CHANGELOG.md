@@ -1,5 +1,10 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.2.0 — 2026-11-06
+- Filtres repliés (Idées, À venir, Adresses) derrière une petite pastille qui résume les choix ; un point orange signale un filtre actif. On la touche pour déplier.
+- Pastilles plus discrètes : fines, sans contour, grisées.
+- Plus de noir pour ce qui est choisi : une couleur douce par ligne de filtres (pervenche, orange, vert, rose, ambre), et pervenche pour les onglets et les bascules.
+
 ## v1.1.0 — 2026-11-06
 - Mises à jour automatiques fiables : le téléphone vérifie la nouvelle version à chaque retour dans l'appli et se recharge tout seul (comme Stuff to go).
 - À venir : trois vues, Cartes / Liste / Calendrier. La liste montre une ligne par événement avec sa petite image.

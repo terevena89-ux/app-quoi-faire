@@ -407,3 +407,41 @@ a.item{color:inherit;text-decoration:none}
 .legend .sw.ouvert{background:linear-gradient(90deg,var(--muted),transparent)}
 .legend .sw.resa{background:transparent;box-shadow:inset 0 0 0 2px var(--ok)}
 [data-theme="pastel"] .item.evl{border:0}
+
+/* =========================================================
+   v1.2.0 : filtres repliés, pastilles discrètes,
+   boutons « choisis » doux avec une couleur d'accent par ligne
+   ========================================================= */
+/* couleurs d'accent (fond léger + texte foncé de la même famille) */
+:root{--chipbg:rgba(23,21,32,.05);
+  --a1:rgba(78,105,198,.18);--at1:#2a3d8f; /* pervenche */
+  --a2:rgba(255,100,31,.16);--at2:#a83a08; /* orange */
+  --a3:rgba(31,138,91,.16);--at3:#156342;  /* vert */
+  --a4:rgba(212,83,126,.16);--at4:#8c2a4f; /* rose */
+  --a5:rgba(186,117,23,.2);--at5:#7a4a06}  /* ambre */
+[data-theme="sombre"]{--chipbg:rgba(255,255,255,.07);
+  --a1:rgba(179,198,247,.2);--at1:#c9d6fa;--a2:rgba(255,100,31,.22);--at2:#ffb08a;
+  --a3:rgba(143,209,168,.2);--at3:#a6e0bd;--a4:rgba(244,169,195,.2);--at4:#f6bdd1;
+  --a5:rgba(240,192,112,.2);--at5:#f3cf8d}
+/* pastilles discrètes : fines, sans contour, grisées */
+.chip,[data-theme="pastel"] .chip{border:0;box-shadow:none;padding:2px 9px;font-size:12px;font-weight:500;color:var(--muted);background:var(--chipbg)}
+.row{gap:6px;margin-bottom:3px}
+.row .lbl{width:48px;font-size:11px}
+.fpanel .row .lbl{width:58px}
+/* choix actif : plus de noir, la couleur de sa ligne */
+.chip.on,[data-theme="pastel"] .chip.on{background:var(--a1);color:var(--at1);font-weight:600;border:0}
+[data-acc="2"] .chip.on{background:var(--a2);color:var(--at2)}
+[data-acc="3"] .chip.on{background:var(--a3);color:var(--at3)}
+[data-acc="4"] .chip.on{background:var(--a4);color:var(--at4)}
+[data-acc="5"] .chip.on{background:var(--a5);color:var(--at5)}
+/* onglets du haut et bascules Tirage / Liste : même douceur */
+.tab.on,.seg button.on,[data-theme="pastel"] .tab.on,[data-theme="pastel"] .seg button.on{background:var(--a1);color:var(--at1);box-shadow:none}
+.tabs,.seg{border-color:var(--line2)}
+/* pastille-résumé des filtres repliés */
+.fresume{display:inline-flex;align-items:center;gap:5px;max-width:100%;font-size:12px;color:var(--muted);border:1px solid var(--line);background:transparent;border-radius:999px;padding:3px 10px 3px 8px;cursor:pointer;margin:0 0 6px;text-align:left}
+.fresume svg{width:13px;height:13px;flex:none}
+.fresume span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.fresume b{color:var(--ink);font-weight:600}
+.fresume .dot{width:6px;height:6px;border-radius:50%;background:var(--orange);flex:none}
+.fresume.open{border-color:var(--line2)}
+.fpli{margin:0 0 6px;animation:rise .25s var(--ease) both}

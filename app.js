@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.1.0";
+const VERSION = "v1.2.0";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -101,6 +101,7 @@ const S = {
   ef: { type: "Tout", zone: "Tout", prix: "Tout" }, archive: false, later: false,
   af: { statut: "Tous", cat: "Toutes", prix: "Tout" }, aview: "Liste",
   // view : Cartes / Liste / Calendrier ; calMode : Semaine / Mois
+  fopen: {}, // filtres dépliés, par onglet
   view: "Cartes", calMode: "Semaine", calWeek: "", calMonth: "", calDay: "",
   // vues ouvertes au démarrage, choisies dans Paramètres (synchronisées entre appareils)
   reglages: { vueIdees: "tirage", vueEvts: "Cartes" }
@@ -572,9 +573,28 @@ const ICON = {
 };
 
 /* ---------- rendu ---------- */
-function chipRow(label, key, opts, store, icon) {
-  return `<div class="row"><span class="lbl">${label}</span><div class="chips">${opts.map(o =>
+// acc : couleur d'accent de la ligne (1 à 5), pour distinguer les filtres d'un coup d'œil
+function chipRow(label, key, opts, store, icon, acc) {
+  return `<div class="row" data-acc="${acc || 1}"><span class="lbl">${label}</span><div class="chips">${opts.map(o =>
     `<button class="chip ${store[key] === o ? "on" : ""}" data-act="${store === S.f ? "f" : store === S.af ? "af" : "ef"}" data-k="${key}" data-v="${esc(o)}">${icon && icon(o) ? icon(o) + " " : ""}${esc(o)}</button>`).join("")}</div></div>`;
+}
+
+// Filtres repliés derrière une petite pastille qui résume les choix (en gras : un vrai choix,
+// point orange : au moins un filtre actif). On la touche pour déplier les lignes de pastilles.
+// lignes : [libellé, clé, choix possibles, où ranger le choix, icône, couleur d'accent]
+const NEUTRES = ["Tout", "Tous", "Toutes", "Peu importe"];
+const RESUME_NEUTRE = { ou: "partout", budget: "tout prix", prix: "tout prix", type: "tous types", zone: "toutes zones", statut: "tous statuts" };
+function blocFiltres(zone, lignes) {
+  const morceaux = [];
+  let actifs = 0;
+  lignes.forEach(([, key, , store]) => {
+    const v = store[key];
+    if (NEUTRES.includes(v)) { if (RESUME_NEUTRE[key]) morceaux.push(RESUME_NEUTRE[key]); }
+    else { actifs++; morceaux.push(`<b>${esc(v)}</b>`); }
+  });
+  const ouvert = !!S.fopen[zone];
+  return `<button class="fresume ${ouvert ? "open" : ""}" data-act="fopen" data-v="${zone}" aria-expanded="${ouvert}" title="Filtres">${ICON.filtre}<span>${morceaux.join(" · ")}</span>${actifs ? '<i class="dot"></i>' : ""}</button>` +
+    (ouvert ? `<div class="fpli">${lignes.map(([l, k, o, st, ic, acc]) => chipRow(l, k, o, st, ic, acc)).join("")}</div>` : "");
 }
 
 function renderIdees() {
@@ -587,11 +607,12 @@ function renderIdees() {
   return `<section class="hero"><h2>On fait quoi ${quand}&nbsp;?</h2></section>` +
     (urgents.length ? `<div class="alert"><div class="eyebrow">À ne pas rater</div>${urgents.map(e =>
       `<div class="ln"><span>${esc(e.titre)}</span><strong>${esc(e.st.label)}</strong></div>`).join("")}</div>` : "") +
-    chipRow("Avec qui", "avec", ["Tous"].concat(S.L.avec), S.f) +
-    chipRow("J’ai", "duree", S.L.duree.map(d => d), S.f) +
-    chipRow("Où", "ou", ["Peu importe", "Maison", "Dehors", "Hors IDF"], S.f) +
-    chipRow("Météo", "meteo", ["Peu importe", "Il pleut"], S.f) +
-    chipRow("Prix", "budget", PRIX_CHOIX, S.f) +
+    blocFiltres("idees", [
+      ["Avec qui", "avec", ["Tous"].concat(S.L.avec), S.f, null, 1],
+      ["J’ai", "duree", S.L.duree.slice(), S.f, null, 2],
+      ["Où", "ou", ["Peu importe", "Maison", "Dehors", "Hors IDF"], S.f, null, 3],
+      ["Météo", "meteo", ["Peu importe", "Il pleut"], S.f, null, 4],
+      ["Prix", "budget", PRIX_CHOIX, S.f, null, 5]]) +
     (S.mode === "liste" ? renderListe(seg) : renderTirage(seg));
 }
 
@@ -637,9 +658,10 @@ function renderEvts() {
     <div style="height:10px"></div>
     <div class="row"><div class="chips">${["Cartes", "Liste", "Calendrier"].map(v =>
       `<button class="chip ${S.view === v ? "on" : ""}" data-act="view" data-v="${v}">${v}</button>`).join("")}</div></div>` +
-    chipRow("Type", "type", ["Tout"].concat(S.L.type), S.ef, o => EMO_TYPE[o]) +
-    chipRow("Zone", "zone", ["Tout"].concat(S.L.zone), S.ef) +
-    chipRow("Prix", "prix", PRIX_CHOIX, S.ef) +
+    blocFiltres("evts", [
+      ["Type", "type", ["Tout"].concat(S.L.type), S.ef, o => EMO_TYPE[o], 2],
+      ["Zone", "zone", ["Tout"].concat(S.L.zone), S.ef, null, 3],
+      ["Prix", "prix", PRIX_CHOIX, S.ef, null, 5]]) +
     (S.view === "Calendrier" ? renderCal(vis) :
     (now.length ? grilleEvts(now) : `<div class="empty"><span class="big">🌱</span>Rien en cours cette semaine.<br>${later.length ? "Regarde plus loin juste en dessous, ou colle" : "Colle"} un lien juste au-dessus !</div>`) +
     (later.length ? `<button class="link" data-act="later">${S.later ? "Masquer" : "Voir"} ce qui commence plus tard (${later.length})</button>` +
@@ -886,9 +908,10 @@ function renderAdresses() {
     <div style="height:10px"></div>
     <div class="row"><div class="chips">${["Liste", "Carte"].map(v =>
       `<button class="chip ${S.aview === v ? "on" : ""}" data-act="aview" data-v="${v}">${v}</button>`).join("")}</div></div>` +
-    chipRow("Statut", "statut", ["Tous"].concat(S.L.adrStatut), S.af, o => ({ Adoré: "♥", "À tester": "🔖" })[o]) +
-    (cats.length > 2 ? chipRow("Type", "cat", cats, S.af, c => EMO_ADR[c]) : "") +
-    chipRow("Prix", "prix", PRIX_CHOIX, S.af) +
+    blocFiltres("adresses", [
+      ["Statut", "statut", ["Tous"].concat(S.L.adrStatut), S.af, o => ({ Adoré: "♥", "À tester": "🔖" })[o], 1]]
+      .concat(cats.length > 2 ? [["Type", "cat", cats, S.af, c => EMO_ADR[c], 4]] : [])
+      .concat([["Prix", "prix", PRIX_CHOIX, S.af, null, 5]])) +
     (S.aview === "Carte" ? renderCarte(vis) : renderAdrListe(vis));
 }
 
@@ -1708,6 +1731,7 @@ document.addEventListener("click", async e => {
       sauverReglages(); render(); break;
     }
     case "calmode": setCalMode(el.dataset.v); render(); break;
+    case "fopen": S.fopen[el.dataset.v] = !S.fopen[el.dataset.v]; render(); break;
     case "extract": extract($("#url").value); break;
     case "archive": S.archive = !S.archive; render(); break;
     case "view": S.view = el.dataset.v; render(true); break;

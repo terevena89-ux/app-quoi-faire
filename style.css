@@ -762,3 +762,42 @@ a.item{color:inherit;text-decoration:none}
 [data-theme^="suisse"] .legend .sw[data-t="Concert / Festival"]{background:#d9ddf6}
 [data-theme^="suisse"] .legend .sw[data-t="Spectacle"]{background:#fcd5d1}
 [data-theme^="suisse"] .legend .sw[data-t="Visite"]{background:#d4f0de}
+
+/* =========================================================
+   v1.4.0 : Adresses façon tableur — en-têtes collés en haut,
+   une carte par type (couleur du type), traits courts entre colonnes
+   ========================================================= */
+.afiltres{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;margin:0 0 6px}
+.afiltres .chip{flex:none}
+.tentete,.tcarte table{width:100%}
+.tentete table,.tcarte table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;font-variant-numeric:tabular-nums}
+.cst{width:92px}.cpx{width:46px}.cstat{width:68px}
+.tentete th,.tcarte td{padding:0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;height:31px}
+.tentete .r,.tcarte .r{text-align:right}.tentete .c,.tcarte .c{text-align:center}
+/* en-têtes : collés sous l'en-tête de l'appli quand on fait défiler */
+.tentete{position:sticky;top:var(--hdr,0px);z-index:4;background:var(--bg);padding:0 1px}
+.tentete th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:0 5px;color:var(--ink);border-bottom:2px solid var(--ink);height:28px;cursor:pointer;user-select:none}
+.tentete th .ar{margin-left:3px;font-size:9px;opacity:.45}
+.tentete th.f .ar{opacity:1;color:var(--orange)}
+/* traits courts entre les colonnes */
+.tentete th+th,.tcarte td+td{background-image:linear-gradient(var(--line2),var(--line2));background-size:1px 50%;background-position:left center;background-repeat:no-repeat}
+/* une carte par type, fond légèrement teinté de la couleur du type */
+.tcartes{display:flex;flex-direction:column;gap:14px;padding:10px 0 4px}
+.tcarte{--tc:color-mix(in srgb,var(--p,#e5e2db) 22%,var(--card));background:var(--tc);border:1px solid var(--line);border-radius:12px;overflow:clip}
+.tcarte.pin{--p:var(--orange)}
+.tband{display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;background:var(--p,#e5e2db);color:#1a1a1a;font-weight:700;font-size:12.5px;
+  border-bottom:1px solid var(--line);position:sticky;top:calc(var(--hdr,0px) + 30px);z-index:2}
+.tcarte.pin .tband{color:#fff}
+.tband .nb{opacity:.6;font-weight:500}
+.tcarte tr{cursor:pointer}
+.tcarte td{border-bottom:1px solid var(--line)}
+.tcarte tr:last-child td{border-bottom:0}
+.tcarte tr:active td{background-color:var(--chipbg)}
+.tcarte .dots{letter-spacing:1px}.tcarte .dots i{font-style:normal;opacity:.22}
+.pst{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--chipbg);color:var(--muted)}
+.pst.a{background:#fcd5d1;color:#8a2a22}
+[data-theme="sombre"] .tband,[data-theme="suissenuit"] .tband{filter:saturate(.85) brightness(.92)}
+/* feuille du bas d'une colonne : pastilles qui passent à la ligne */
+.fcol .chips{flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.fcol .chip{font-size:13.5px;padding:6px 12px}
+.fcol .foot{display:flex;justify-content:space-between;gap:8px}

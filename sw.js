@@ -4,7 +4,7 @@
 // même sans réseau. (Les données, elles, sont gérées par Firebase.)
 // À CHAQUE NOUVELLE VERSION : changer le numéro ci-dessous.
 // =========================================================
-const CACHE = "quoi-faire-v1.3.4";
+const CACHE = "quoi-faire-v1.4.0";
 
 // Fichiers de l'appli à garder dès l'installation
 const FICHIERS = [

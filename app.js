@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.3.4";
+const VERSION = "v1.4.0";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -101,6 +101,8 @@ const S = {
   mode: "tirage", q: "", tri: "cat", filt: false, lf: { cat: "Toutes", pin: "Toutes" }, open: {},
   ef: { type: "Tout", zone: "Tout", prix: "Tout" }, archive: false, later: false,
   af: { statut: "Tous", cat: "Toutes", prix: "Tout" }, aview: "Liste",
+  // tableau des adresses : tri par colonne et filtres à plusieurs choix (flèches ▾ des en-têtes)
+  atri: { k: "nom", s: 1 }, acol: { cat: [], style: [], prix: [], statut: [] },
   // view : Cartes / Liste / Calendrier ; calMode : Semaine / Mois
   fopen: {}, // filtres dépliés, par onglet
   addOpen: {}, // cadre « Ajouter » déplié, par onglet
@@ -985,11 +987,12 @@ function renderAdresses() {
   return titrePage("adresses", "Adresses") +
     blocAjout("adresses", "Ajouter une adresse", "aurl", "Coller un lien Maps…", "adr-extract", "ago", "new-adr") +
     basculeVue("aview", S.aview, [["Liste", ICON.list], ["Carte", ICON.map]]) +
-    blocFiltres("adresses", [
+    // en Liste, les filtres passent par les flèches ▾ des en-têtes du tableau
+    (S.aview === "Liste" ? renderAdrListe() : "") +
+    (S.aview === "Liste" ? "" : blocFiltres("adresses", [
       ["Statut", "statut", ["Tous"].concat(S.L.adrStatut), S.af, o => ({ Adoré: "♥", "À tester": "🔖" })[o], 1]]
       .concat(cats.length > 2 ? [["Type", "cat", cats, S.af, c => EMO_ADR[c], 4]] : [])
-      .concat([["Prix", "prix", PRIX_CHOIX, S.af, null, 5]])) +
-    (S.aview === "Carte" ? renderCarte(vis) : renderAdrListe(vis));
+      .concat([["Prix", "prix", PRIX_CHOIX, S.af, null, 5]])) + renderCarte(vis));
 }
 
 // dist : distance affichée à la place du prix (liste « les plus proches »)
@@ -1004,21 +1007,71 @@ function adrLigne(a, dist) {
     ${dist || a.prix ? `<span class="when">${esc(dist || a.prix)}</span>` : ""}</div>`;
 }
 
-function renderAdrListe(vis) {
+/* Liste des adresses façon tableur (v1.4.0) :
+   en-têtes de colonnes collés en haut (Nom, Style, Prix, Statut), une flèche ▾ sur chacun
+   pour trier et filtrer ; puis une carte séparée par type (Restau, Bar…) à la couleur du type. */
+const ACOLS = [["nom", "Nom", ""], ["style", "Style", ""], ["prix", "€", "r"], ["statut", "Statut", "c"]];
+const ACOL_NOM = { cat: "Type", style: "Style", prix: "Prix", statut: "Statut" };
+const prixRang = p => { const r = S.L.budget.indexOf(p); return r < 0 ? 9 : r; };
+// prix en points : ●●○ (Gratuit = 0)
+const prixPoints = p => { const n = prixRang(p); return n === 9 ? "" : n ? `<span class="dots">${"●".repeat(n)}<i>${"●".repeat(3 - n)}</i></span>` : "0"; };
+const statutPastille = s => s ? `<span class="pst ${s === "Adoré" ? "a" : ""}">${esc(s)}</span>` : "";
+const acolActifs = () => Object.keys(S.acol).filter(k => S.acol[k].length);
+function adrTableau() {
+  const q = S.acol;
+  const vis = S.adresses.filter(a => Object.keys(q).every(k => !q[k].length || q[k].includes(a[k] || "")));
+  const { k, s } = S.atri;
+  return vis.sort((a, b) => s * (k === "prix" ? prixRang(a.prix) - prixRang(b.prix)
+    : String(a[k] || "").localeCompare(String(b[k] || ""), "fr", { numeric: true })) ||
+    String(a.nom).localeCompare(String(b.nom), "fr"));
+}
+const ACG = '<colgroup><col><col class="cst"><col class="cpx"><col class="cstat"></colgroup>';
+const adrRang = a => `<tr data-act="adr-pop" data-id="${esc(a.id)}"><td>${esc(a.nom)}</td><td>${esc(a.style || "")}</td>
+  <td class="r">${prixPoints(a.prix)}</td><td class="c">${statutPastille(a.statut)}</td></tr>`;
+const adrCarte = (cls, c, titre, l) => `<div class="tcarte ${cls}"${c !== null ? ` data-c="${esc(c)}"` : ""}>
+  <div class="tband">${titre}<span class="nb">${l.length}</span></div><table>${ACG}<tbody>${l.map(adrRang).join("")}</tbody></table></div>`;
+
+function renderAdrListe() {
   if (!S.adresses.length) return `<div class="empty"><span class="big">📍</span>Aucune adresse pour l’instant.<br>Dans Google Maps : Partager → Copier le lien, puis colle-le ici.</div>`;
-  if (!vis.length) return '<div class="empty">Aucune adresse pour ces filtres.</div>';
-  const nom = (a, b) => String(a.nom).localeCompare(String(b.nom), "fr");
-  const pins = vis.filter(epingle).sort(nom);
-  const ordre = adrCats();
-  const autres = vis.filter(a => !epingle(a)).sort((a, b) => (ordre.indexOf(a.cat) - ordre.indexOf(b.cat)) || nom(a, b));
-  let cat = null;
-  return `<div class="count">${plur(vis.length, "adresse")}</div>` +
-    (pins.length ? `<div class="pinbloc"><div class="ghead"><span class="emoji">📌 </span>Épinglées</div>${pins.map(a => adrLigne(a)).join("")}</div>` : "") +
-    autres.map(a => {
-      const titre = a.cat !== cat ? `<div class="ghead"><span class="emoji">${adrEmo(a.cat)} </span>${esc(a.cat || "Autres")}</div>` : "";
-      cat = a.cat;
-      return titre + adrLigne(a);
-    }).join("");
+  const vis = adrTableau();
+  const ent = ACOLS.map(([k, l, cl]) => {
+    const actif = k === "nom" ? S.acol.cat.length : S.acol[k].length;
+    return `<th class="${cl} ${actif ? "f" : ""}" data-act="acol" data-k="${k}">${l}<span class="ar">${actif ? "▼" : "▾"}</span></th>`;
+  }).join("");
+  const filtres = acolActifs().map(k => `<button class="chip on" data-act="acol-raz" data-k="${k}">${ACOL_NOM[k]} : ${esc(S.acol[k].join(", "))} ✕</button>`).join("");
+  const pins = vis.filter(epingle), autres = vis.filter(a => !epingle(a));
+  const cats = adrCats().concat(autres.some(a => !a.cat) ? [""] : []);
+  const cartes = (pins.length ? adrCarte("pin", null, `<span class="emoji garde">📌 </span>Épinglées`, pins) : "") +
+    cats.map(c => { const l = autres.filter(a => (a.cat || "") === c); return l.length ? adrCarte("", c, `<span class="emoji garde">${adrEmo(c)} </span>${esc(c || "Autres")}`, l) : ""; }).join("");
+  return (filtres ? `<div class="afiltres">${filtres}</div>` : "") +
+    `<div class="tentete"><table>${ACG}<thead><tr>${ent}</tr></thead></table></div>` +
+    `<div class="tcartes">${cartes || '<div class="empty">Aucune adresse pour ces filtres.</div>'}</div>`;
+}
+
+// Feuille du bas d'une colonne : trier, et garder seulement certaines valeurs (plusieurs choix)
+let feuilleCol = null; // { k, sel }
+function ouvrirFeuilleCol(k) {
+  const fk = k === "nom" ? "cat" : k; // la colonne Nom filtre par type
+  feuilleCol = { k, fk, sel: S.acol[fk].slice() };
+  afficherFeuilleCol();
+}
+function afficherFeuilleCol() {
+  const { k, fk, sel } = feuilleCol;
+  let vals = [...new Set(S.adresses.map(a => a[fk] || "").filter(Boolean))];
+  vals = fk === "cat" ? adrCats().filter(c => vals.includes(c)) : fk === "prix" ? vals.sort((a, b) => prixRang(a) - prixRang(b))
+    : vals.sort((a, b) => a.localeCompare(b, "fr"));
+  const [asc, desc] = k === "prix" ? ["Moins cher", "Plus cher"] : ["A → Z", "Z → A"];
+  const t = S.atri;
+  form = null; popup = null;
+  $("#modal").innerHTML = `<div class="overlay" data-act="close-bg"><div class="sheet fcol">
+    <h2>${ACOLS.find(c => c[0] === k)[1]}</h2>
+    <div class="lbl">Trier</div><div class="chips">
+      <button class="chip ${t.k === k && t.s > 0 ? "on" : ""}" data-act="acol-tri" data-v="1">↑ ${asc}</button>
+      <button class="chip ${t.k === k && t.s < 0 ? "on" : ""}" data-act="acol-tri" data-v="-1">↓ ${desc}</button></div>
+    ${vals.length ? `<div class="lbl">${fk === "cat" ? "Garder seulement ces types" : "Garder seulement"}</div><div class="chips">${vals.map(v =>
+      `<button class="chip ${sel.includes(v) ? "on" : ""}" data-act="acol-val" data-v="${esc(v)}">${fk === "cat" ? `<span class="emoji">${adrEmo(v)} </span>` : ""}${esc(v)}</button>`).join("")}</div>` : ""}
+    <div class="foot"><button class="btn" data-act="acol-vide">Tout effacer</button><button class="btn primary" data-act="acol-ok">Appliquer</button></div>
+  </div></div>`;
 }
 
 function renderCarte(vis) {
@@ -1271,6 +1324,13 @@ async function saveNotesNow() {
 }
 
 // anim = true : les cartes apparaissent en cascade (changement d'onglet, nouveau tirage…).
+// Hauteur de l'en-tête de l'appli (collé en haut) : les en-têtes du tableau se collent juste dessous
+function hauteurEntete() {
+  const h = document.querySelector("header");
+  if (h) document.documentElement.style.setProperty("--hdr", h.offsetHeight + "px");
+}
+window.addEventListener("resize", hauteurEntete);
+
 function render(anim) {
   if (!S.pret) { if (!uid && auth) renderConnexion(); return; }
   $("#sub").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
@@ -1281,6 +1341,7 @@ function render(anim) {
   main.innerHTML = S.tab === "idees" ? renderIdees() : S.tab === "evts" ? renderEvts() : S.tab === "adresses" ? renderAdresses() :
     S.tab === "notes" ? renderNotes() : renderRadar();
   if (S.tab === "adresses" && S.aview === "Carte") drawMap();
+  hauteurEntete();
   if (anim) {
     main.querySelectorAll(".card,.item").forEach((el, i) => { el.style.animationDelay = Math.min(i, 12) * 55 + "ms"; });
     void main.offsetWidth; // relance l'animation
@@ -1888,6 +1949,13 @@ document.addEventListener("click", async e => {
     case "ev-pop": ouvrirPopup("evt", id); break;
     case "idee-pop": ouvrirPopup("idee", id); break;
     case "adr-pop": ouvrirPopup("adr", id); break;
+    // tableau des adresses : feuille du bas d'une colonne (trier / garder seulement)
+    case "acol": ouvrirFeuilleCol(el.dataset.k); break;
+    case "acol-tri": S.atri = { k: feuilleCol.k, s: +el.dataset.v }; afficherFeuilleCol(); break;
+    case "acol-val": { const v = el.dataset.v, s = feuilleCol.sel; feuilleCol.sel = s.includes(v) ? s.filter(x => x !== v) : s.concat(v); afficherFeuilleCol(); break; }
+    case "acol-vide": feuilleCol.sel = []; S.atri = { k: "nom", s: 1 }; afficherFeuilleCol(); break;
+    case "acol-ok": S.acol[feuilleCol.fk] = feuilleCol.sel; feuilleCol = null; closeForm(); render(); break;
+    case "acol-raz": S.acol[el.dataset.k] = []; render(); break;
     case "pop-menu": popup.menu = !popup.menu; afficherPopup(); break;
     case "pop-edit": { const { kind, id: pid } = popup; popup = null; openForm(kind, S[KINDS[kind].arr].find(x => x.id === pid)); break; }
     case "pop-del": { const { kind, id: pid } = popup; closeForm(); supprimer(kind, pid); break; }

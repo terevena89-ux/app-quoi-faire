@@ -1,5 +1,11 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.4.0 — 2026-11-06
+- Adresses (vue Liste) façon tableur : colonnes Nom · Style · € · Statut, en-têtes collés en haut quand on fait défiler.
+- Une carte séparée par type (Restau, Bar, Café…), bandeau et fond à la couleur du type ; les épinglées dans leur propre carte en tête.
+- Flèche ▾ sur chaque en-tête : feuille du bas pour trier et garder seulement certaines valeurs (plusieurs choix ; Nom = filtre par type). Les filtres actifs s'affichent en pastilles, ✕ pour les enlever.
+- Prix en points (●●○), statut en pastille (Adoré / À tester), petits traits entre les colonnes.
+
 ## v1.3.4 — 2026-11-06
 - Les 3 onglets ont le même haut de page : titre, bascule de vue et filtres exactement aux mêmes hauteurs (« À ne pas rater » passe sous les filtres).
 - Titre qui apparaît en douceur sur À venir et Adresses, comme sur Idées.

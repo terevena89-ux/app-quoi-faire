@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.3.2";
+const VERSION = "v1.3.3";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -45,8 +45,9 @@ const EVTS = {
   nom: "Événements", arr: "evts",
   // niveau : prix de 0 à 3 (Gratuit, €, €€, €€€), déduit du prix en euros s'il est vide
   // heure : pour un événement réservé (« 20:00 »), facultative
-  keys: ["id", "titre", "type", "lieu", "zone", "debut", "fin", "prix", "lien", "image", "desc", "avec", "statut", "ajoute", "niveau", "heure"],
-  headers: ["ID", "Titre", "Type", "Lieu", "Zone", "Début", "Fin", "Prix", "Lien", "Image", "Description", "Avec qui", "Statut", "Ajouté le", "Niveau de prix", "Heure"]
+  // lieu : le NOM du lieu (« Musée de la Marine ») ; adresse : la rue et la ville, à part
+  keys: ["id", "titre", "type", "lieu", "zone", "debut", "fin", "prix", "lien", "image", "desc", "avec", "statut", "ajoute", "niveau", "heure", "adresse"],
+  headers: ["ID", "Titre", "Type", "Lieu", "Zone", "Début", "Fin", "Prix", "Lien", "Image", "Description", "Avec qui", "Statut", "Ajouté le", "Niveau de prix", "Heure", "Adresse"]
 };
 // Radar : les sites des lieux à surveiller
 const SOURCES = {
@@ -220,6 +221,7 @@ const API = {
   saveEvt: o => {
     if (!o.statut) o.statut = "À voir";
     sansFinInventee(o);
+    separerLieu(o);
     if (!o.ajoute) o.ajoute = today_();
     if (!o.niveau) o.niveau = niveauPrix(o.prix);
     return upsert(EVTS, o);
@@ -533,7 +535,31 @@ function badges(e) {
   return `<span class="badge ${e.st.cls || ""}">${esc(e.st.label)}</span>` +
     (reserve(e) ? `<span class="badge resa">${ICON.check}Réservé${h && evGenre(e) !== "jour" ? " · " + esc(h) : ""}</span>` : "");
 }
-const lieuPrix = e => [e.lieu || e.zone, e.prix !== "" && e.prix != null ? (typeof e.prix === "number" ? e.prix + " €" : e.prix) : niveauEvt(e)].filter(Boolean).join(" · ");
+// Petits tags colorés (thèmes Suisse) : catégorie avec son emoji, temps restant, réservé
+function tagsEvt(e) {
+  const court = { "Concert / Festival": "Concert" }[e.type] || e.type;
+  return (e.type ? `<span class="tg" data-t="${esc(e.type)}">${typeEmo(e.type)} ${esc(court)}</span>` : "") +
+    (reserve(e) ? `<span class="tg resa">✓ Réservé</span>` : "") +
+    `<span class="tg t-${e.st.cls || "neutre"}">${esc(e.st.label)}</span>`;
+}
+
+// Avant, le lieu mélangeait nom et adresse (« Philharmonie – 221 av. Jean-Jaurès, 75019 Paris »).
+// On sépare : ce qui est avant « – » est le nom ; une simple adresse va dans « adresse ».
+const ressembleAdresse = s => /^\s*\d/.test(s) || /\b\d{5}\b/.test(s);
+function separerLieu(o) {
+  if (o.adresse || !o.lieu) return o;
+  const s = String(o.lieu);
+  const i = s.indexOf(" – ");
+  if (i > 0) { o.adresse = s.slice(i + 3).trim(); o.lieu = s.slice(0, i).trim(); }
+  else if (ressembleAdresse(s)) { o.adresse = s; o.lieu = ""; }
+  return o;
+}
+// Nom du lieu à afficher ; sans nom connu, la ville (« Paris 5e »)
+function nomLieu(e) {
+  const o = separerLieu(Object.assign({}, e));
+  return o.lieu || villeDe(o.adresse) || "";
+}
+const lieuPrix = e => [nomLieu(e) || e.zone, e.prix !== "" && e.prix != null ? (typeof e.prix === "number" ? e.prix + " €" : e.prix) : niveauEvt(e)].filter(Boolean).join(" · ");
 function evSorted() {
   return S.evts.map(e => Object.assign({ st: evState(e) }, e)).sort((a, b) => a.st.key < b.st.key ? -1 : a.st.key > b.st.key ? 1 : 0);
 }
@@ -591,6 +617,8 @@ const ICON = {
   map: svg('<path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>'),
   target: svg('<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>'),
   list: svg('<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>'),
+  grille: svg('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
+  cal: svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>'),
   dice: svg('<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r=".6" fill="currentColor"/><circle cx="15" cy="15" r=".6" fill="currentColor"/><circle cx="15" cy="9" r=".6" fill="currentColor"/><circle cx="9" cy="15" r=".6" fill="currentColor"/>'),
   // indicateur de synchro
   nuage_ok: svg(NUAGE + '<path d="M9.5 13.5l2 2 3.5-3.5"/>'),
@@ -601,7 +629,7 @@ const ICON = {
 /* ---------- rendu ---------- */
 // acc : couleur d'accent de la ligne (1 à 5), pour distinguer les filtres d'un coup d'œil
 function chipRow(label, key, opts, store, icon, acc) {
-  return `<div class="row" data-acc="${acc || 1}"><span class="lbl">${label}</span><div class="chips">${opts.map(o =>
+  return `<div class="row" data-acc="${acc || 1}" data-k="${key}"><span class="lbl">${label}</span><div class="chips">${opts.map(o =>
     `<button class="chip ${store[key] === o ? "on" : ""}" data-act="${store === S.f ? "f" : store === S.af ? "af" : "ef"}" data-k="${key}" data-v="${esc(o)}">${icon && icon(o) ? `<span class="emoji">${icon(o)} </span>` : ""}${esc(o)}</button>`).join("")}</div></div>`;
 }
 
@@ -667,11 +695,15 @@ function ideaCard(i) {
   </div>`;
 }
 
+// Bascule de vue, même style que Tirage / Liste sur la page Idées (icône + mot)
+const basculeVue = (act, cur, vues) => `<div class="modebar"><div class="seg">${vues.map(([v, ic]) =>
+  `<button class="${cur === v ? "on" : ""}" data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${ic} ${v}</button>`).join("")}</div></div>`;
+
 // Titre de page (le grand titre et le compteur ne s'affichent que dans les thèmes Suisse)
 // avec, à droite, le bouton « + Ajouter » qui déplie le cadre d'ajout.
 function titrePage(zone, titre, compte) {
   const ouvert = !!S.addOpen[zone];
-  return `<div class="ptitle"><h2>${titre}</h2><span class="pcount">${esc(compte)}</span>
+  return `<div class="ptitle"><h2>${titre}</h2>${compte ? `<span class="pcount">${esc(compte)}</span>` : ""}
     <button class="addbtn ${ouvert ? "on" : ""}" data-act="add-open" data-v="${zone}" aria-expanded="${ouvert}">${ouvert ? "× Fermer" : "<b>+</b> Ajouter"}</button></div>`;
 }
 // Cadre d'ajout : coller un lien (lu automatiquement) ou remplir à la main
@@ -693,10 +725,9 @@ function renderEvts() {
   const now = act.filter(e => !e.debut || e.debut <= lim).sort((a, b) => reserve(b) - reserve(a));
   const later = act.filter(e => e.debut && e.debut > lim).sort((a, b) => reserve(b) - reserve(a));
   // titre de page (affiché seulement par certains thèmes, ex. Suisse)
-  return titrePage("evts", "À venir", act.length + " en cours") +
+  return titrePage("evts", "À venir") +
     blocAjout("evts", "Ajouter un événement", "url", "Coller un lien…", "extract", "go", "new-evt") +
-    `<div class="row"><div class="chips">${["Cartes", "Liste", "Calendrier"].map(v =>
-      `<button class="chip ${S.view === v ? "on" : ""}" data-act="view" data-v="${v}">${v}</button>`).join("")}</div></div>` +
+    basculeVue("view", S.view, [["Cartes", ICON.grille], ["Liste", ICON.list], ["Calendrier", ICON.cal]]) +
     blocFiltres("evts", [
       ["Type", "type", ["Tout"].concat(S.L.type), S.ef, o => EMO_TYPE[o], 2],
       ["Zone", "zone", ["Tout"].concat(S.L.zone), S.ef, null, 3],
@@ -832,6 +863,7 @@ function evCard(e) {
   return `<article class="card evc ${reserve(e) ? "reserve" : ""}" data-act="ev-pop" data-id="${esc(e.id)}">
     <div class="cover" data-t="${esc(e.type)}"><span class="cemo">${typeEmo(e.type)}</span>${imageEvt(e)}
       <div class="bds">${badges(e)}</div>
+      <div class="tags">${tagsEvt(e)}</div>
     </div>
     <div class="evbody">
       <div class="kline"><span>${esc(e.type || "")}</span>${reserve(e) ? '<span class="ok">✓ Réservé</span>' : `<span class="${e.st.cls || ""}">${esc(e.st.label)}</span>`}</div>
@@ -847,7 +879,7 @@ function evLigne(e) {
   const [ic, quand] = dateLigne(e);
   return `<div class="item evl ${reserve(e) ? "reserve" : ""}" data-act="ev-pop" data-id="${esc(e.id)}">
     <div class="th" data-t="${esc(e.type)}"><span>${typeEmo(e.type)}</span>${imageEvt(e)}</div>
-    <div class="tx"><b>${esc(e.titre || "(sans titre)")}</b><div class="quand">${ic}<span>${esc(quand)}</span></div><div class="meta">${esc(lieuPrix(e))}</div></div>
+    <div class="tx"><div class="tags">${tagsEvt(e)}</div><b>${esc(e.titre || "(sans titre)")}</b><div class="quand">${ic}<span>${esc(quand)}</span></div><div class="meta">${esc(lieuPrix(e))}</div></div>
     <div class="dr">${badges(e)}</div></div>`;
 }
 
@@ -937,10 +969,9 @@ const estLienMaps = s => /maps[.]app[.]goo[.]gl|goo[.]gl[/]maps|google[.][a-z.]+
 function renderAdresses() {
   const vis = adrVisibles();
   const cats = ["Toutes"].concat(adrCats().filter(c => S.adresses.some(a => a.cat === c)));
-  return titrePage("adresses", "Adresses", String(S.adresses.length)) +
+  return titrePage("adresses", "Adresses") +
     blocAjout("adresses", "Ajouter une adresse", "aurl", "Coller un lien Maps…", "adr-extract", "ago", "new-adr") +
-    `<div class="row"><div class="chips">${["Liste", "Carte"].map(v =>
-      `<button class="chip ${S.aview === v ? "on" : ""}" data-act="aview" data-v="${v}">${v}</button>`).join("")}</div></div>` +
+    basculeVue("aview", S.aview, [["Liste", ICON.list], ["Carte", ICON.map]]) +
     blocFiltres("adresses", [
       ["Statut", "statut", ["Tous"].concat(S.L.adrStatut), S.af, o => ({ Adoré: "♥", "À tester": "🔖" })[o], 1]]
       .concat(cats.length > 2 ? [["Type", "cat", cats, S.af, c => EMO_ADR[c], 4]] : [])
@@ -1255,7 +1286,7 @@ const F_IDEE = [
 const F_EVT = [
   ["titre", "Titre", "text"], ["lien", "Lien", "url"],
   ["type", "Type", "select", "type", "half"], ["zone", "Zone", "select", "zone", "half"],
-  ["lieu", "Lieu", "text"],
+  ["lieu", "Nom du lieu", "text"], ["adresse", "Adresse", "text"],
   ["debut", "Début", "date", "", "half"], ["fin", "Fin", "date", "", "half"],
   ["prix", "Prix en €", "text", "", "half"], ["niveau", "Prix (0 à 3)", "select", "budget", "half"],
   ["statut", "Statut", "select", "statut", "half"], ["heure", "Heure (si réservé)", "time", "", "half"],
@@ -1300,6 +1331,7 @@ function fieldHtml([k, label, type, src], v) {
 
 // coller : la page n'a pas pu être lue (ex. Shotgun), le bloc « coller le texte » s'ouvre directement.
 function openForm(kind, obj, infos, coller) {
+  if (kind === "evt") obj = separerLieu(Object.assign({}, obj));
   const fields = KINDS[kind].fields;
   form = { kind, fields, base: Object.assign({}, obj) };
   let html = "", half = [];
@@ -1349,26 +1381,30 @@ function afficherPopup() {
   if (popup.kind === "evt") {
     const e = Object.assign({ st: evState(o) }, o);
     vignette = `<div class="pimg" data-t="${esc(e.type)}"><span>${typeEmo(e.type)}</span>${imageEvt(e)}</div>`;
-    kicker = e.type || "";
+    kicker = e.type ? `<span class="emoji garde">${typeEmo(e.type)} </span>${esc(e.type)}` : "";
     etiquettes = badges(e);
     const [ic, quand] = dateLigne(e);
     infos.push(`<div class="quand">${ic}<span>${esc(quand)}</span></div>`);
     const p = progression(e);
     if (p !== null) infos.push(`<div class="prog"><i style="width:${p}%"></i></div>`);
     if (lieuPrix(e)) infos.push(`<div>${esc(lieuPrix(e))}</div>`);
+    // l'adresse en petit, sous le nom du lieu
+    const adr = separerLieu(Object.assign({}, e)).adresse;
+    if (adr) infos.push(`<div class="padr">${esc(adr)}</div>`);
+    notes = e.desc || ""; // description entière
     if (e.lien) btns.push(lienPop(e.lien, ICON.ouvrir, "Ouvrir", "p"));
     btns.push(btnPop("pop-resa", ICON.billet, reserve(e) ? "Réservé ✓" : "Réservé", reserve(e) ? "r on" : "r"));
     btns.push(actif(e) ? btnPop("pop-fait", ICON.check, "Fait") : btnPop("pop-avoir", ICON.prev, "Remettre"));
   } else if (popup.kind === "idee") {
     vignette = `<div class="pimg" data-c="${esc(o.cat)}"><span>${catEmo(o.cat)}</span></div>${catIllu(o.cat)}`;
-    kicker = [o.cat, grp(o)].filter(Boolean).join(" · ");
+    kicker = esc([o.cat, grp(o)].filter(Boolean).join(" · "));
     if (o.derniere) infos.push(`<div>Dernière fois : ${esc(fmt(o.derniere))}</div>`);
     notes = o.notes || "";
     btns.push(btnPop("pop-pin", ICON.pin, epingle(o) ? "Épinglée" : "Épingler", epingle(o) ? "on" : ""));
     btns.push(btnPop("pop-faitidee", ICON.check, o.derniere === today() ? "Fait aujourd’hui ✓" : "Fait aujourd’hui", o.derniere === today() ? "r on" : ""));
   } else {
     vignette = `<div class="pimg" data-c="${esc(o.cat)}"><span>${adrEmo(o.cat)}</span></div>`;
-    kicker = [o.cat, o.style].filter(Boolean).join(" · ");
+    kicker = esc([o.cat, o.style].filter(Boolean).join(" · "));
     if (o.statut === "Adoré") etiquettes = '<span class="badge adore">♥ Adoré</span>';
     const ligne = [o.adresse || o.ville, o.prix].filter(Boolean).join(" · ");
     if (ligne) infos.push(`<div>${esc(ligne)}</div>`);
@@ -1382,7 +1418,7 @@ function afficherPopup() {
     ${popup.menu ? `<div class="pdd"><button data-act="pop-edit">${ICON.edit}Modifier</button><button class="sup" data-act="pop-del">${ICON.trash}Supprimer</button></div>` : ""}</span>`;
   $("#modal").innerHTML = `<div class="overlay centre" data-act="close-bg"><div class="pop" role="dialog" aria-label="${esc(titre)}">
     <div class="ptop">${vignette}
-      <div class="ptx">${kicker ? `<div class="kicker">${esc(kicker)}</div>` : ""}<h3>${esc(titre)}</h3>${etiquettes ? `<div class="pbds">${etiquettes}</div>` : ""}</div>
+      <div class="ptx">${kicker ? `<div class="kicker">${kicker}</div>` : ""}<h3>${esc(titre)}</h3>${etiquettes ? `<div class="pbds">${etiquettes}</div>` : ""}</div>
       <div class="pcoin">${menu}<button class="pmini" data-act="close" aria-label="Fermer">${ICON.x}</button></div></div>
     ${infos.length ? `<div class="pinfo">${infos.join("")}</div>` : ""}
     ${notes ? `<div class="pnotes">${esc(notes)}</div>` : ""}

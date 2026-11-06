@@ -1,5 +1,13 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.3.3 — 2026-11-06
+- Événements : nouveau champ « Nom du lieu » séparé de l'« Adresse ». Les cartes montrent le nom (ex. Musée de la Marine) ; sans nom, la ville (« Paris 5e »). Les anciens lieux « Nom – adresse » sont séparés tout seuls.
+- Pop-up d'événement : description entière, adresse en petit, emoji du type.
+- À venir et Adresses : bascule de vue avec icônes, comme Tirage / Liste.
+- Plus de compteur sur À venir ni Adresses.
+- Thème Suisse : titres de page soulignés d'un filet noir ; cartes plus grandes ; petits tags colorés (catégorie avec emoji, temps restant, réservé) sur les cartes et dans la liste ; emoji dans le filtre Type.
+- Excel : nouvelle colonne « Adresse » dans Événements.
+
 ## v1.3.2 — 2026-11-06
 - Thème Suisse : filtres en couleur, une teinte douce par ligne (comme Dure Vie).
 - Thème Suisse : petites illustrations colorées pour les catégories d'idées (tirage, liste, pop-up).

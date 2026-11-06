@@ -657,3 +657,43 @@ a.item{color:inherit;text-decoration:none}
 [data-theme^="suisse"] .ptop .ill{width:52px;height:52px;border-radius:12px}
 [data-theme^="suisse"] .ptop .ill svg{width:36px;height:36px}
 [data-theme="suissenuit"] .ill{filter:saturate(.9) brightness(.9)}
+
+/* =========================================================
+   v1.3.3 : tags colorés, titres soulignés, cartes plus grandes,
+   adresse séparée du nom du lieu, description dans le pop-up
+   ========================================================= */
+/* pop-up : la description entière peut être longue, on fait défiler */
+.pop{max-height:88vh;overflow:auto}
+.pnotes{font-size:12.5px;line-height:1.45;padding-top:6px}
+.padr{font-size:11.5px;color:var(--muted)}
+/* bascule de vue À venir / Adresses (même style que Tirage / Liste) */
+.modebar .seg button svg{width:14px;height:14px}
+
+/* tags colorés : cachés hors thèmes Suisse */
+.tags{display:none}
+.tg{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;white-space:nowrap;background:#ececec;color:#444;line-height:16px}
+.tg[data-t="Expo"]{background:#fbd3e2;color:#7a1f45}
+.tg[data-t="Ciné"],.tg[data-t="Atelier"]{background:#fff0b8;color:#5a4500}
+.tg[data-t="Concert / Festival"],.tg[data-t="Concert"],.tg[data-t="Festival"]{background:#d9ddf6;color:#27305e}
+.tg[data-t="Spectacle"]{background:#fcd5d1;color:#8a2a22}
+.tg[data-t="Visite"]{background:#d4f0de;color:#1f5c36}
+.tg.t-urgent{background:#ffe0d3;color:#a8380f}
+.tg.t-soon{background:#dcebf0;color:#2b5866}
+.tg.resa{background:var(--ok);color:#fff}
+[data-theme^="suisse"] .tags{display:flex;flex-wrap:wrap;gap:4px}
+[data-theme^="suisse"] .evc .cover .tags{position:absolute;top:6px;left:6px;right:6px;z-index:1}
+[data-theme^="suisse"] .evl .tx .tags{margin-bottom:3px}
+[data-theme^="suisse"] .kline,[data-theme^="suisse"] .evl .dr{display:none}
+/* emoji gardés dans le thème Suisse : filtre Type, tags, pop-up */
+[data-theme^="suisse"] .row[data-k="type"] .emoji,[data-theme^="suisse"] .emoji.garde{display:inline}
+
+/* cartes un peu plus grandes */
+[data-theme^="suisse"] .evc .cover{height:112px}
+[data-theme^="suisse"] .evc .evbody{padding:8px 9px 10px}
+[data-theme^="suisse"] .evc .evbody h3{font-size:14.5px}
+[data-theme^="suisse"] .evc .quand,[data-theme^="suisse"] .evc .evinfo{font-size:12px}
+[data-theme^="suisse"] .evl .th{width:60px;height:60px}
+
+/* titres de page soulignés d'un filet noir */
+[data-theme^="suisse"] .ptitle,[data-theme^="suisse"] .hero{border-bottom:2px solid var(--ink);padding-bottom:8px;margin-bottom:12px}
+[data-theme^="suisse"] .ptitle .addbtn{margin-left:auto}

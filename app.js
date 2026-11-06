@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.3.3";
+const VERSION = "v1.3.4";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -464,7 +464,7 @@ async function togglePin(id) {
   const avant = i.epingle;
   i.epingle = epingle(i) ? "" : "oui";
   render();
-  toast(i.epingle ? "📌 Épinglée : elle reste dans tes tirages" : "Désépinglée");
+  vibre("ok"); toast(i.epingle ? "📌 Épinglée : elle reste dans tes tirages" : "Désépinglée");
   try { await call("saveIdee", i); } catch (e) { i.epingle = avant; render(); }
 }
 
@@ -536,11 +536,13 @@ function badges(e) {
     (reserve(e) ? `<span class="badge resa">${ICON.check}Réservé${h && evGenre(e) !== "jour" ? " · " + esc(h) : ""}</span>` : "");
 }
 // Petits tags colorés (thèmes Suisse) : catégorie avec son emoji, temps restant, réservé
+// Libellés raccourcis pour tenir côte à côte sur une carte (« Finit dans 10 j » -> « Fin 10 j »)
+const tagCourt = s => String(s).replace(/^Finit dans /, "Fin ").replace(/^Dernier jour !$/, "Dernier jour");
 function tagsEvt(e) {
   const court = { "Concert / Festival": "Concert" }[e.type] || e.type;
-  return (e.type ? `<span class="tg" data-t="${esc(e.type)}">${typeEmo(e.type)} ${esc(court)}</span>` : "") +
-    (reserve(e) ? `<span class="tg resa">✓ Réservé</span>` : "") +
-    `<span class="tg t-${e.st.cls || "neutre"}">${esc(e.st.label)}</span>`;
+  return (e.type ? `<span class="tg tt" data-t="${esc(e.type)}">${typeEmo(e.type)} ${esc(court)}</span>` : "") +
+    `<span class="tg t-${e.st.cls || "neutre"}">${esc(tagCourt(e.st.label))}</span>` +
+    (reserve(e) ? `<span class="tg resa" title="Réservé">✓</span>` : "");
 }
 
 // Avant, le lieu mélangeait nom et adresse (« Philharmonie – 221 av. Jean-Jaurès, 75019 Paris »).
@@ -658,19 +660,21 @@ function renderIdees() {
   const quand = { Soirée: "ce soir", "Demi-journée": "cet aprèm", Journée: "aujourd’hui" }[S.f.duree] || "aujourd’hui";
   const seg = [["tirage", ICON.dice, "Tirage"], ["liste", ICON.list, "Liste"]].map(([m, ic, l]) =>
     `<button class="${S.mode === m ? "on" : ""}" data-act="mode" data-v="${m}" aria-pressed="${S.mode === m}">${ic} ${l}</button>`).join("");
-  return `<section class="hero"><h2>On fait quoi ${quand}&nbsp;?</h2></section>` +
-    (urgents.length ? `<div class="alert"><div class="eyebrow">À ne pas rater</div>${urgents.map(e =>
-      `<div class="ln"><span>${esc(e.titre)}</span><strong>${esc(e.st.label)}</strong></div>`).join("")}</div>` : "") +
-    blocFiltres("idees", [
+  // Même ordre que sur À venir et Adresses : titre, bascule de vue, filtres, puis le contenu
+  const apres = blocFiltres("idees", [
       ["Avec qui", "avec", ["Tous"].concat(S.L.avec), S.f, null, 1],
       ["J’ai", "duree", S.L.duree.slice(), S.f, null, 2],
       ["Où", "ou", ["Peu importe", "Maison", "Dehors", "Hors IDF"], S.f, null, 3],
       ["Météo", "meteo", ["Peu importe", "Il pleut"], S.f, null, 4],
       ["Prix", "budget", PRIX_CHOIX, S.f, null, 5]]) +
-    (S.mode === "liste" ? renderListe(seg) : renderTirage(seg));
+    (urgents.length ? `<div class="alert"><div class="eyebrow">À ne pas rater</div>${urgents.map(e =>
+      `<div class="ln"><span>${esc(e.titre)}</span><strong>${esc(e.st.label)}</strong></div>`).join("")}</div>` : "");
+  return `<section class="hero"><h2>On fait quoi ${quand}&nbsp;?</h2></section>` +
+    (S.mode === "liste" ? renderListe(seg, apres) : renderTirage(seg, apres));
 }
 
-function renderTirage(seg) {
+// apres : filtres et « À ne pas rater », placés juste sous la bascule de vue
+function renderTirage(seg, apres) {
   const picks = S.picks.map(id => S.idees.find(i => i.id === id)).filter(Boolean);
   const n = entrees(S.idees.filter(matches)).length;
   const vide = S.idees.length
@@ -678,6 +682,7 @@ function renderTirage(seg) {
     : "Pas encore d’idées.<br>Ajoute-en depuis la liste, ou importe ton ancien fichier dans Paramètres.";
   return `<div class="modebar"><div class="seg">${seg}</div><span class="grow"></span>
       ${n > picks.length ? `<button class="btn primary sm" data-act="suggest">${ICON.dice} Nouveau tirage</button>` : ""}</div>` +
+    (apres || "") +
     (picks.length ? `<div class="pgrid">${picks.map(ideaCard).join("")}</div>` : `<div class="empty"><span class="big">🫥</span>${vide}</div>`);
 }
 
@@ -786,26 +791,33 @@ function setCalMode(m) {
 
 // Une rangée de 7 jours avec les barres des événements (sert pour la semaine et pour le mois).
 // large : vue semaine (nom des jours, heure dans les blocs d'un seul jour)
+// Au-delà de maxL lignes de barres, on affiche « +N » (le détail est dans la liste du jour).
 function rangeeSemaine(ws, periodes, t, mois, large) {
+  const maxL = large ? 6 : 3;
   const we = addDays(ws, 6);
   const jours = [...Array(7)].map((_, i) => addDays(ws, i));
   const lignes = []; // dernière colonne occupée par ligne de frise
+  let caches = 0;
   const barres = periodes.filter(x => x.r[0] <= we && x.r[1] >= ws).map(x => {
     const s = x.r[0] < ws ? 0 : jours.indexOf(x.r[0]);
     const f = x.r[1] > we ? 6 : jours.indexOf(x.r[1]);
     let k = lignes.findIndex(fin => fin < s);
-    if (k < 0) { k = lignes.length; lignes.push(f); } else lignes[k] = f;
+    if (k < 0) {
+      if (lignes.length >= maxL) { caches++; return ""; }
+      k = lignes.length; lignes.push(f);
+    } else lignes[k] = f;
     const unJour = x.r[0] === x.r[1];
     const txt = unJour && large && fmtHeure(x.e.heure) ? fmtHeure(x.e.heure) : x.e.titre;
     const cls = [unJour && "jour", evGenre(x.e) === "ouvert" && x.r[1] <= we && "ouvert",
       x.r[0] < ws && "cont-l", x.r[1] > we && "cont-r", reserve(x.e) && "resa"].filter(Boolean).join(" ");
-    return `<div class="bar ${cls}" data-t="${esc(x.e.type)}" style="grid-column:${s + 1}/${f + 2};grid-row:${k + 2}">${esc(txt)}</div>`;
+    return `<div class="bar ${cls}" data-t="${esc(x.e.type)}" style="grid-column:${s + 1}/${f + 2};grid-row:${k + 2}"><span class="emoji garde">${typeEmo(x.e.type)} </span>${esc(txt)}</div>`;
   }).join("");
   const cases = jours.map((iso, i) => {
-    const cls = [mois && iso.slice(0, 7) !== mois && "out", iso < t && "past", iso === t && "today", iso === S.calDay && "sel"].filter(Boolean).join(" ");
+    const cls = [mois && iso.slice(0, 7) !== mois && "out", iso < t && "past", iso === t && "today", iso === S.calDay && "sel", i >= 5 && "we"].filter(Boolean).join(" ");
     return `<button class="day ${cls}" style="grid-column:${i + 1}" data-act="day" data-v="${iso}">${large ? `<small>${jourSemaine(iso)}</small>` : ""}<span class="num">${+iso.slice(8)}</span></button>`;
   }).join("");
-  return `<div class="week ${large ? "large" : ""}" style="grid-template-rows:${large ? 40 : 24}px ${lignes.length ? `repeat(${lignes.length}, 18px)` : ""} 6px">${cases}${barres}</div>`;
+  const plus = caches ? `<div class="plusN" style="grid-row:${lignes.length + 2}">+${caches}</div>` : "";
+  return `<div class="week ${large ? "large" : ""}" style="grid-template-rows:${large ? 44 : 28}px ${lignes.length ? `repeat(${lignes.length}, 20px)` : ""} ${caches ? "16px" : "6px"}">${cases}${barres}${plus}</div>`;
 }
 
 function renderCal(vis) {
@@ -816,8 +828,8 @@ function renderCal(vis) {
   const evs = vis.filter(actif).map(e => ({ e, r: evRange(e) })).filter(x => x.r);
   const sansDate = vis.filter(e => actif(e) && !evRange(e)).length;
   const on = iso => evs.filter(x => x.r[0] <= iso && iso <= x.r[1]);
-  // Tout est dans la frise ; les événements d'un seul jour sont des blocs encadrés.
-  const periodes = evs.slice().sort((a, b) => a.r[0] < b.r[0] ? -1 : a.r[0] > b.r[0] ? 1 : (a.r[1] > b.r[1] ? -1 : 1));
+  // Tout est dans la frise ; ceux qui finissent le plus tôt passent en haut (priorité aux fins proches).
+  const periodes = evs.slice().sort((a, b) => a.r[1] < b.r[1] ? -1 : a.r[1] > b.r[1] ? 1 : (a.r[0] < b.r[0] ? -1 : 1));
 
   let titre, corps;
   if (S.calMode === "Mois") {
@@ -892,7 +904,7 @@ function lfMatch(i) {
   return (f.cat === "Toutes" || i.cat === f.cat) && (f.pin === "Toutes" || epingle(i));
 }
 
-function renderListe(seg) {
+function renderListe(seg, apres) {
   const cats = ["Toutes"].concat([...new Set(S.idees.map(i => i.cat).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")));
   const actif = S.tri !== "cat" || Object.keys(LF_DEFAUT).some(k => S.lf[k] !== LF_DEFAUT[k]);
   const ligne = (label, k, opts, icone) => `<div class="row"><span class="lbl">${label}</span><div class="chips">${opts.map(o =>
@@ -900,6 +912,7 @@ function renderListe(seg) {
   return `<div class="modebar"><div class="seg">${seg}</div>
       <input type="search" id="q" placeholder="Rechercher…" value="${esc(S.q)}">
       <button class="ibtn fbtn ${S.filt ? "open" : ""} ${actif ? "actif" : ""}" data-act="filt" title="Trier et filtrer" aria-label="Trier et filtrer">${ICON.filtre}</button></div>
+    ${apres || ""}
     ${S.filt ? `<div class="fpanel">
       <div class="row"><span class="lbl">Trier</span><div class="chips">${TRIS.map(([k, l]) =>
         `<button class="chip ${S.tri === k ? "on" : ""}" data-act="tri" data-v="${k}">${l}</button>`).join("")}</div></div>
@@ -1095,7 +1108,7 @@ async function togglePinAdr(id) {
   const avant = a.epingle;
   a.epingle = epingle(a) ? "" : "oui";
   render();
-  toast(a.epingle ? "📌 Épinglée" : "Désépinglée");
+  vibre("ok"); toast(a.epingle ? "📌 Épinglée" : "Désépinglée");
   try { await call("saveAdresse", a); } catch (e) { a.epingle = avant; render(); }
 }
 
@@ -1273,6 +1286,11 @@ function render(anim) {
     void main.offsetWidth; // relance l'animation
     main.classList.add("anim");
   }
+  // nouveau tirage : les 3 cartes d'idées se retournent l'une après l'autre
+  if (S.retourne) {
+    S.retourne = false;
+    main.querySelectorAll(".pgrid .card.pc").forEach((el, i) => { el.style.animationDelay = i * 90 + "ms"; el.classList.add("retourne"); });
+  }
 }
 
 /* ---------- 5. Formulaires ---------- */
@@ -1424,13 +1442,20 @@ function afficherPopup() {
     ${notes ? `<div class="pnotes">${esc(notes)}</div>` : ""}
     <div class="pbtns">${btns.join("")}</div>
   </div></div>`;
+  // coche animée sur le bouton qu'on vient d'activer (Réservé, Épinglée, Fait aujourd'hui)
+  if (popupCoche) {
+    const b = $(`#modal .pb[data-act="${popupCoche}"].on`);
+    popupCoche = "";
+    if (b) b.classList.add("coche");
+  }
 }
+let popupCoche = "";
 
 // Change le statut d'un événement depuis le pop-up
 async function statutPop(statut, message, fermer) {
   const ev = S.evts.find(x => x.id === popup.id);
   const saved = await call("saveEvt", Object.assign({}, ev, { statut }));
-  Object.assign(ev, saved); render(); toast(message);
+  Object.assign(ev, saved); render(); vibre("ok"); toast(message);
   if (fermer) closeForm(); else afficherPopup();
 }
 
@@ -1452,7 +1477,7 @@ async function saveForm(btn) {
     const arr = S[K.arr];
     const i = arr.findIndex(x => x.id === saved.id);
     if (i >= 0) arr[i] = saved; else arr.push(saved);
-    closeForm(); render(); toast("Enregistré");
+    closeForm(); render(); vibre("ok"); toast("Enregistré");
   } catch (e) { btn.disabled = false; btn.textContent = "Enregistrer"; }
 }
 
@@ -1468,7 +1493,7 @@ async function supprimer(kind, id) {
   S[K.arr] = S[K.arr].filter(x => x.id !== id);
   if (kind === "idee") S.picks = S.picks.filter(x => x !== id);
   closeForm(); render();
-  toast(K.supprime, avant && (() => {
+  vibre("suppr"); toast(K.supprime, avant && (() => {
     ecrire(K.arr, avant);
     S[K.arr] = S[K.arr].filter(x => x.id !== id).concat([avant]).sort(parCree);
     render(); toast("Restauré");
@@ -1574,6 +1599,7 @@ function openSettings() {
     <h2>Paramètres</h2>
     <div class="lbl">Apparence</div>
     <button class="setrow card" data-act="themes"><span>Thème</span><span class="meta">${esc(t.nom)} ›</span></button>
+    <button class="setrow card" data-act="vibre"><span>Vibrations</span><span class="interr ${vibreOn() ? "on" : ""}" aria-hidden="true"></span></button>
     ${uid ? `<div class="lbl" style="margin-top:22px">Affichage au démarrage</div>
     <div class="card">${ligneReglage("Idées", "vueIdees", [["tirage", "Tirage"], ["liste", "Liste"]])}
       ${ligneReglage("À venir", "vueEvts", [["Cartes", "Cartes"], ["Liste", "Liste"], ["Calendrier", "Calendrier"]])}
@@ -1825,7 +1851,18 @@ function confirmImport(btn) {
 }
 
 /* ---------- 7. Clics et démarrage ---------- */
+// Vibrations (Android ; l'iPhone les ignore). Réglage gardé sur chaque appareil, activé par défaut.
+function vibreOn() { try { return localStorage.getItem("qf-vibre") !== "non"; } catch (e) { return true; } }
+const VIBRE = { toc: 8, ok: [12, 60, 18], suppr: 35, tirage: [8, 40, 8, 40, 8] };
+function vibre(type) {
+  // le navigateur refuse de vibrer tant qu'on n'a pas touché l'écran au moins une fois
+  if (!vibreOn() || !navigator.vibrate || (navigator.userActivation && !navigator.userActivation.hasBeenActive)) return;
+  try { navigator.vibrate(VIBRE[type] || 8); } catch (e) { /* refusé par le navigateur : pas grave */ }
+}
+
 document.addEventListener("click", async e => {
+  // petit toc sur tout ce qui se touche (boutons, pastilles, cartes, onglets)
+  if (e.target.closest("button, a, [data-act], [data-tab], label")) vibre("toc");
   const tab = e.target.closest("[data-tab]");
   if (tab) { if (!S.pret) return; saveNotesNow(); S.tab = tab.dataset.tab; render(true); window.scrollTo(0, 0); return; }
   const el = e.target.closest("[data-act]");
@@ -1838,7 +1875,7 @@ document.addEventListener("click", async e => {
     case "export": exporter(el); break;
     case "f": S.f[el.dataset.k] = el.dataset.v; suggest(); render(true); break;
     case "ef": S.ef[el.dataset.k] = el.dataset.v; render(true); break;
-    case "suggest": suggest(); render(true); break;
+    case "suggest": vibre("tirage"); suggest(); S.retourne = true; render(); break;
     case "mode": S.mode = el.dataset.v; render(true); break;
     case "grp": S.open[el.dataset.v] = !S.open[el.dataset.v]; $("#items").innerHTML = renderItems(); break;
     case "later": S.later = !S.later; render(); break;
@@ -1854,19 +1891,21 @@ document.addEventListener("click", async e => {
     case "pop-menu": popup.menu = !popup.menu; afficherPopup(); break;
     case "pop-edit": { const { kind, id: pid } = popup; popup = null; openForm(kind, S[KINDS[kind].arr].find(x => x.id === pid)); break; }
     case "pop-del": { const { kind, id: pid } = popup; closeForm(); supprimer(kind, pid); break; }
-    case "pop-resa": statutPop(reserve(S.evts.find(x => x.id === popup.id)) ? "À voir" : "Réservé", "Statut mis à jour"); break;
+    case "pop-resa": popupCoche = "pop-resa"; statutPop(reserve(S.evts.find(x => x.id === popup.id)) ? "À voir" : "Réservé", "Statut mis à jour"); break;
     case "pop-fait": statutPop("Fait", "Noté comme fait", true); break;
     case "pop-avoir": statutPop("À voir", "Remis dans les à venir"); break;
     case "pop-pin": {
+      popupCoche = "pop-pin";
       const p = popup;
       await (p.kind === "idee" ? togglePin(p.id) : togglePinAdr(p.id));
       popup = p; afficherPopup(); break;
     }
     case "pop-faitidee": {
+      popupCoche = "pop-faitidee";
       const i = S.idees.find(x => x.id === popup.id);
       i.derniere = i.derniere === today() ? "" : today();
       await call("saveIdee", i);
-      render(); toast(i.derniere ? "Noté : fait aujourd’hui" : "Date retirée"); afficherPopup(); break;
+      render(); vibre("ok"); toast(i.derniere ? "Noté : fait aujourd’hui" : "Date retirée"); afficherPopup(); break;
     }
     case "apin": togglePinAdr(id); break;
     case "locate": locate(el); break;
@@ -1880,7 +1919,7 @@ document.addEventListener("click", async e => {
       const ev = S.evts.find(x => x.id === id);
       el.disabled = true;
       const saved = await call("saveEvt", Object.assign({}, ev, { statut: "Fait" }));
-      Object.assign(ev, saved); render(); toast("Noté comme fait"); break;
+      Object.assign(ev, saved); render(); vibre("ok"); toast("Noté comme fait"); break;
     }
     case "ev-resa": {
       // bascule « À voir » <-> « Réservé » ; l'heure se met dans la fiche
@@ -1909,6 +1948,11 @@ document.addEventListener("click", async e => {
     case "view": S.view = el.dataset.v; render(true); break;
     case "settings": openSettings(); break;
     case "themes": openThemes(); break;
+    case "vibre": {
+      try { localStorage.setItem("qf-vibre", vibreOn() ? "non" : "oui"); } catch (err) { /* stockage bloqué */ }
+      el.querySelector(".interr").classList.toggle("on", vibreOn());
+      vibre("ok"); break;
+    }
     case "new-src": openForm("src", { cat: "" }); break;
     case "edit-src": openForm("src", S.sources.find(x => x.id === id)); break;
     case "open-cat": openCat(el.dataset.v); break;

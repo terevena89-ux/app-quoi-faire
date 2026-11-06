@@ -1,5 +1,13 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.3.4 — 2026-11-06
+- Les 3 onglets ont le même haut de page : titre, bascule de vue et filtres exactement aux mêmes hauteurs (« À ne pas rater » passe sous les filtres).
+- Titre qui apparaît en douceur sur À venir et Adresses, comme sur Idées.
+- Cartes d'événements plus grandes ; les tags (catégorie, temps restant, ✓ réservé) tiennent sur une ligne (« Fin 10 j »).
+- Calendrier épuré : aujourd'hui en rond orange, week-end grisé, barres aux couleurs des tags avec emoji, « +N » quand il y en a trop, et les événements qui finissent le plus tôt en haut.
+- Vibrations sur Android : petit toc au toucher, double toc de réussite, toc marqué à la suppression, roulement au nouveau tirage. Interrupteur dans Paramètres.
+- Animations : les 3 idées se retournent au nouveau tirage ; la coche se dessine dans le pop-up (Réservé, Épinglée, Fait aujourd'hui).
+
 ## v1.3.3 — 2026-11-06
 - Événements : nouveau champ « Nom du lieu » séparé de l'« Adresse ». Les cartes montrent le nom (ex. Musée de la Marine) ; sans nom, la ville (« Paris 5e »). Les anciens lieux « Nom – adresse » sont séparés tout seuls.
 - Pop-up d'événement : description entière, adresse en petit, emoji du type.

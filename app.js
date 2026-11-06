@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.3.1";
+const VERSION = "v1.3.2";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -102,6 +102,7 @@ const S = {
   af: { statut: "Tous", cat: "Toutes", prix: "Tout" }, aview: "Liste",
   // view : Cartes / Liste / Calendrier ; calMode : Semaine / Mois
   fopen: {}, // filtres dépliés, par onglet
+  addOpen: {}, // cadre « Ajouter » déplié, par onglet
   view: "Cartes", calMode: "Semaine", calWeek: "", calMonth: "", calDay: "",
   // vues ouvertes au démarrage, choisies dans Paramètres (synchronisées entre appareils)
   reglages: { vueIdees: "tirage", vueEvts: "Cartes" }
@@ -543,6 +544,25 @@ const EMO_CAT = { Culture: "🏛️", Sortie: "🍹", Sport: "🏃", Cuisine: "�
 const EMO_TYPE = { Expo: "🖼️", Ciné: "🎬", "Concert / Festival": "🎶", Concert: "🎶", Festival: "🎶", Spectacle: "🎭",
   Visite: "🧭", Atelier: "✂️", Autre: "✨" };
 const catEmo = c => EMO_CAT[c] || "💡";
+
+// Petites illustrations plates multicolores des catégories d'idées (thèmes Suisse).
+// Une par catégorie de base ; une ampoule pour les catégories créées en plus.
+const ill = d => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+const ILLU = {
+  Culture: ill('<path d="M12 3l9 5H3z" fill="#ff6f61"/><rect x="3" y="8" width="18" height="2" fill="#2f3e8f"/><rect x="5" y="10" width="2.4" height="7" fill="#fff"/><rect x="10.8" y="10" width="2.4" height="7" fill="#fff"/><rect x="16.6" y="10" width="2.4" height="7" fill="#fff"/><rect x="3" y="17" width="18" height="3" rx="1" fill="#4e69c6"/>'),
+  Sortie: ill('<path d="M5 4h14l-7 8z" fill="#ff4d8d"/><path d="M7.6 6.6h8.8L12 11.4z" fill="#ffb3cf"/><rect x="11.2" y="11.6" width="1.6" height="6.6" fill="#5a6b8c"/><rect x="8" y="18.2" width="8" height="2" rx="1" fill="#5a6b8c"/><circle cx="17" cy="5" r="2.6" fill="#ffd23f"/><path d="M8 2l3 6" stroke="#2ec4b6" stroke-width="1.6" stroke-linecap="round"/>'),
+  Sport: ill('<circle cx="12" cy="12" r="9" fill="#ff8a3d"/><path d="M3 12h18M12 3v18M5.6 5.6c3 3 3 9.8 0 12.8M18.4 5.6c-3 3-3 9.8 0 12.8" stroke="#9c3d0c" stroke-width="1.4" fill="none"/>'),
+  Cuisine: ill('<path d="M3.5 12.5h17a8.5 6.5 0 0 1-17 0z" fill="#e2574c"/><rect x="3" y="11.5" width="18" height="1.6" rx=".8" fill="#9e2f27"/><circle cx="8.5" cy="10.5" r="2" fill="#ffd23f"/><circle cx="12.5" cy="9.8" r="1.8" fill="#4caf50"/><circle cx="15.8" cy="10.8" r="1.5" fill="#ff9f1c"/><path d="M9.5 6c0-1.6 1.6-1.6 1.6-3.2M13.5 6c0-1.6 1.6-1.6 1.6-3.2" stroke="#8a94a8" stroke-width="1.4" fill="none" stroke-linecap="round"/>'),
+  "Créatif": ill('<path d="M12 3c5 0 9 3.6 9 8 0 2.4-1.8 3.4-3.6 3.4h-2c-1.3 0-2 1-1.4 2.2.7 1.4-.2 3.4-2 3.4C7 20 3 16 3 11.5S7 3 12 3z" fill="#f6d6a8"/><circle cx="7.5" cy="10.5" r="1.7" fill="#e2574c"/><circle cx="10.5" cy="7" r="1.7" fill="#ffd23f"/><circle cx="15" cy="7.2" r="1.7" fill="#4caf50"/><circle cx="17.6" cy="10.8" r="1.7" fill="#4e69c6"/>'),
+  Apprendre: ill('<path d="M2 6c3-1.5 7-1.5 10 1v13c-3-2.5-7-2.5-10-1z" fill="#7c6cf0"/><path d="M22 6c-3-1.5-7-1.5-10 1v13c3-2.5 7-2.5 10-1z" fill="#a99df7"/><path d="M4 8c2.4-.8 4.6-.6 6.5.8V18c-1.9-1.3-4.1-1.5-6.5-.8z" fill="#fff"/><path d="M20 8c-2.4-.8-4.6-.6-6.5.8V18c1.9-1.3 4.1-1.5 6.5-.8z" fill="#fff"/><path d="M16 7v6l1.3-1 1.3 1V6.6z" fill="#ff4d6d"/>'),
+  "Détente": ill('<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z" fill="#2ec4b6"/><path d="M17 10.5h1.5a2.5 2.5 0 0 1 0 5H17" stroke="#1b8a80" stroke-width="1.8" fill="none"/><rect x="3" y="19" width="15" height="2" rx="1" fill="#f6d6a8"/><rect x="5.5" y="9" width="10" height="2" fill="#a7f0e6"/><path d="M8.5 6c0-1.4 1.3-1.4 1.3-2.8M12 6c0-1.4 1.3-1.4 1.3-2.8" stroke="#8a94a8" stroke-width="1.4" fill="none" stroke-linecap="round"/>'),
+  Maison: ill('<rect x="5" y="10" width="14" height="10" fill="#ffd23f"/><path d="M2.5 11L12 3l9.5 8z" fill="#e2574c"/><rect x="10" y="14" width="4" height="6" fill="#8d5a3b"/><rect x="6.5" y="12.5" width="2.6" height="2.6" fill="#74c0fc"/><rect x="14.9" y="12.5" width="2.6" height="2.6" fill="#74c0fc"/>'),
+  Nature: ill('<circle cx="18" cy="6" r="3" fill="#ffd23f"/><rect x="10.9" y="14" width="2.2" height="7" fill="#8d5a3b"/><circle cx="12" cy="10" r="6" fill="#4caf50"/><circle cx="9.5" cy="8.5" r="2.4" fill="#7ed67f"/><path d="M3 21h18" stroke="#2e7d32" stroke-width="2" stroke-linecap="round"/>'),
+  Jeux: ill('<rect x="10" y="3" width="11" height="11" rx="2.5" fill="#4caf50" transform="rotate(12 15.5 8.5)"/><rect x="3" y="9" width="12" height="12" rx="2.6" fill="#e2574c"/><circle cx="6.5" cy="12.5" r="1.2" fill="#fff"/><circle cx="9" cy="15" r="1.2" fill="#fff"/><circle cx="11.5" cy="17.5" r="1.2" fill="#fff"/><circle cx="15.5" cy="6.5" r="1.1" fill="#fff"/><circle cx="17.5" cy="10" r="1.1" fill="#fff"/>'),
+  Projets: ill('<path d="M3 6.5l6-3 6 3 6-3v14l-6 3-6-3-6 3z" fill="#bfe8d4"/><path d="M9 3.5l6 3v14l-6-3z" fill="#7fd1ae"/><path d="M5 14c2-1.2 3 1 5 0s3-3.2 5-2.2 3 2.2 4 1" stroke="#ff7a1a" stroke-width="1.8" fill="none" stroke-dasharray="2 1.6" stroke-linecap="round"/><circle cx="18.5" cy="12.2" r="2" fill="#e2574c"/>')
+};
+const ILLU_DEFAUT = ill('<path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V17h5.2v-1.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z" fill="#ffd23f"/><rect x="9.4" y="17.6" width="5.2" height="2" rx=".8" fill="#8a94a8"/><rect x="10.2" y="20" width="3.6" height="1.6" rx=".8" fill="#5a6b8c"/><path d="M10.5 9.5l1.5 2 1.5-2" stroke="#e08a00" stroke-width="1.3" fill="none"/>');
+const catIllu = c => `<span class="ill" data-c="${esc(c || "")}">${ILLU[c] || ILLU_DEFAUT}</span>`;
 const typeEmo = t => EMO_TYPE[t] || "✨";
 
 const svg = d => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -610,7 +630,7 @@ function renderIdees() {
   const quand = { Soirée: "ce soir", "Demi-journée": "cet aprèm", Journée: "aujourd’hui" }[S.f.duree] || "aujourd’hui";
   const seg = [["tirage", ICON.dice, "Tirage"], ["liste", ICON.list, "Liste"]].map(([m, ic, l]) =>
     `<button class="${S.mode === m ? "on" : ""}" data-act="mode" data-v="${m}" aria-pressed="${S.mode === m}">${ic} ${l}</button>`).join("");
-  return `<section class="hero"><h2>On fait quoi ${quand}&nbsp;?</h2><span class="hcount">${plur(S.idees.length, "idée")}</span></section>` +
+  return `<section class="hero"><h2>On fait quoi ${quand}&nbsp;?</h2></section>` +
     (urgents.length ? `<div class="alert"><div class="eyebrow">À ne pas rater</div>${urgents.map(e =>
       `<div class="ln"><span>${esc(e.titre)}</span><strong>${esc(e.st.label)}</strong></div>`).join("")}</div>` : "") +
     blocFiltres("idees", [
@@ -639,12 +659,28 @@ function ideaCard(i) {
   const pin = epingle(i);
   return `<div class="card pc ${pin ? "pinned" : ""}" data-act="idee-pop" data-id="${esc(i.id)}">
     ${pin ? `<span class="pinmark" aria-label="Épinglée">${ICON.pin}</span>` : ""}
-    <div class="emo" data-c="${esc(i.cat)}">${catEmo(i.cat)}</div>
+    <div class="emo" data-c="${esc(i.cat)}">${catEmo(i.cat)}</div>${catIllu(i.cat)}
     <div class="kcat">${esc(i.cat || "")}</div>
     ${grp(i) ? `<div class="gk">${esc(grp(i))}</div>` : ""}
     <h3>${esc(i.nom)}</h3>
     <div class="ptags">${[i.lieu, i.budget].filter(Boolean).map(esc).join(" · ")}</div>
   </div>`;
+}
+
+// Titre de page (le grand titre et le compteur ne s'affichent que dans les thèmes Suisse)
+// avec, à droite, le bouton « + Ajouter » qui déplie le cadre d'ajout.
+function titrePage(zone, titre, compte) {
+  const ouvert = !!S.addOpen[zone];
+  return `<div class="ptitle"><h2>${titre}</h2><span class="pcount">${esc(compte)}</span>
+    <button class="addbtn ${ouvert ? "on" : ""}" data-act="add-open" data-v="${zone}" aria-expanded="${ouvert}">${ouvert ? "× Fermer" : "<b>+</b> Ajouter"}</button></div>`;
+}
+// Cadre d'ajout : coller un lien (lu automatiquement) ou remplir à la main
+function blocAjout(zone, titre, idChamp, aide, actLire, idBtn, actMain) {
+  if (!S.addOpen[zone]) return "";
+  return `<div class="card addc"><div class="lbl">${titre}</div>
+    <div class="add"><input type="url" id="${idChamp}" placeholder="${aide}" inputmode="url">
+      <button class="btn primary" data-act="${actLire}" id="${idBtn}">Lire</button>
+      <button class="btn" data-act="${actMain}">${ICON.edit} À la main</button></div></div>`;
 }
 
 function renderEvts() {
@@ -657,12 +693,9 @@ function renderEvts() {
   const now = act.filter(e => !e.debut || e.debut <= lim).sort((a, b) => reserve(b) - reserve(a));
   const later = act.filter(e => e.debut && e.debut > lim).sort((a, b) => reserve(b) - reserve(a));
   // titre de page (affiché seulement par certains thèmes, ex. Suisse)
-  return `<div class="ptitle"><h2>À venir</h2><span>${act.length} en cours</span></div>
-    <div class="add"><input type="url" id="url" placeholder="Colle le lien d’une expo, d’un concert, d’un film…" inputmode="url">
-      <button class="btn primary" data-act="extract" id="go">Ajouter</button></div>
-    <button class="link" data-act="new-evt">ou remplir à la main</button>
-    <div style="height:10px"></div>
-    <div class="row"><div class="chips">${["Cartes", "Liste", "Calendrier"].map(v =>
+  return titrePage("evts", "À venir", act.length + " en cours") +
+    blocAjout("evts", "Ajouter un événement", "url", "Coller un lien…", "extract", "go", "new-evt") +
+    `<div class="row"><div class="chips">${["Cartes", "Liste", "Calendrier"].map(v =>
       `<button class="chip ${S.view === v ? "on" : ""}" data-act="view" data-v="${v}">${v}</button>`).join("")}</div></div>` +
     blocFiltres("evts", [
       ["Type", "type", ["Tout"].concat(S.L.type), S.ef, o => EMO_TYPE[o], 2],
@@ -858,7 +891,7 @@ function renderItems() {
   const items = S.idees.filter(i => matches(i) && lfMatch(i) && (!q || (i.nom + " " + grp(i)).toLowerCase().includes(q)));
   if (!items.length) return '<div class="empty">Aucune idée pour ces filtres.</div>';
   const nom = (a, b) => String(a.nom).localeCompare(String(b.nom), "fr");
-  const ligne = (i, cls, avecGroupe) => { const on = epingle(i); return `<div class="item li ${cls || ""}" data-act="edit-idee" data-id="${esc(i.id)}"><div class="emo" data-c="${esc(i.cat)}">${catEmo(i.cat)}</div>
+  const ligne = (i, cls, avecGroupe) => { const on = epingle(i); return `<div class="item li ${cls || ""}" data-act="edit-idee" data-id="${esc(i.id)}"><div class="emo" data-c="${esc(i.cat)}">${catEmo(i.cat)}</div>${catIllu(i.cat)}
       <div class="txt">${esc(i.nom)}${avecGroupe && grp(i) ? `<span class="gm">${esc(grp(i))}</span>` : ""}</div>
       <button class="pact ${on ? "on" : ""}" data-act="pin" data-id="${esc(i.id)}" title="${on ? "Désépingler" : "Épingler"}" aria-label="${on ? "Désépingler" : "Épingler"} ${esc(i.nom)}" aria-pressed="${on}">${ICON.pin}</button></div>`; };
 
@@ -878,7 +911,7 @@ function renderItems() {
     if (!u.g) return titre + ligne(u.i);
     const ouvert = !!S.open[u.g] || !!q;
     return titre + `<div class="item li grp ${ouvert ? "open" : ""}" data-act="grp" data-v="${esc(u.g)}" aria-expanded="${ouvert}">
-        <div class="emo" data-c="${esc(u.cat)}">${catEmo(u.cat)}</div><div class="txt">${esc(u.g)}</div>
+        <div class="emo" data-c="${esc(u.cat)}">${catEmo(u.cat)}</div>${catIllu(u.cat)}<div class="txt">${esc(u.g)}</div>
         <span class="gn">${u.items.length}</span><span class="chev">›</span></div>` +
       (ouvert ? u.items.map(i => ligne(i, "sub")).join("") : "");
   }).join("");
@@ -904,12 +937,9 @@ const estLienMaps = s => /maps[.]app[.]goo[.]gl|goo[.]gl[/]maps|google[.][a-z.]+
 function renderAdresses() {
   const vis = adrVisibles();
   const cats = ["Toutes"].concat(adrCats().filter(c => S.adresses.some(a => a.cat === c)));
-  return `<div class="ptitle"><h2>Adresses</h2><span>${S.adresses.length}</span></div>
-    <div class="add"><input type="url" id="aurl" placeholder="Colle un lien Google Maps…" inputmode="url">
-      <button class="btn primary" data-act="adr-extract" id="ago">Ajouter</button></div>
-    <button class="link" data-act="new-adr">ou remplir à la main</button>
-    <div style="height:10px"></div>
-    <div class="row"><div class="chips">${["Liste", "Carte"].map(v =>
+  return titrePage("adresses", "Adresses", String(S.adresses.length)) +
+    blocAjout("adresses", "Ajouter une adresse", "aurl", "Coller un lien Maps…", "adr-extract", "ago", "new-adr") +
+    `<div class="row"><div class="chips">${["Liste", "Carte"].map(v =>
       `<button class="chip ${S.aview === v ? "on" : ""}" data-act="aview" data-v="${v}">${v}</button>`).join("")}</div></div>` +
     blocFiltres("adresses", [
       ["Statut", "statut", ["Tous"].concat(S.L.adrStatut), S.af, o => ({ Adoré: "♥", "À tester": "🔖" })[o], 1]]
@@ -1330,7 +1360,7 @@ function afficherPopup() {
     btns.push(btnPop("pop-resa", ICON.billet, reserve(e) ? "Réservé ✓" : "Réservé", reserve(e) ? "r on" : "r"));
     btns.push(actif(e) ? btnPop("pop-fait", ICON.check, "Fait") : btnPop("pop-avoir", ICON.prev, "Remettre"));
   } else if (popup.kind === "idee") {
-    vignette = `<div class="pimg" data-c="${esc(o.cat)}"><span>${catEmo(o.cat)}</span></div>`;
+    vignette = `<div class="pimg" data-c="${esc(o.cat)}"><span>${catEmo(o.cat)}</span></div>${catIllu(o.cat)}`;
     kicker = [o.cat, grp(o)].filter(Boolean).join(" · ");
     if (o.derniere) infos.push(`<div>Dernière fois : ${esc(fmt(o.derniere))}</div>`);
     notes = o.notes || "";
@@ -1513,23 +1543,17 @@ function openSettings() {
       ${ligneReglage("À venir", "vueEvts", [["Cartes", "Cartes"], ["Liste", "Liste"], ["Calendrier", "Calendrier"]])}
       <div class="meta">Les mêmes sur le téléphone et le PC.</div></div>
     <div class="lbl" style="margin-top:22px">Excel</div>
-    <div class="card">
-      <h3>Exporter</h3>
-      <div class="meta">Un fichier .xlsx avec tes idées, tes événements, tes adresses, ton Radar et tes notes, un onglet chacun.</div>
-      <div class="actions"><button class="btn primary" data-act="export">Télécharger le fichier</button></div>
-    </div>
-    <div class="card">
-      <h3>Importer</h3>
-      <div class="meta">Le même format que l’export, ou ton ancien fichier Google Sheet. Les lignes déjà présentes, reconnues par leur ID ou leur nom, sont mises à jour, les nouvelles sont ajoutées. Rien n’est supprimé, et une case vide n’efface rien.</div>
-      <div class="actions"><label class="btn">Choisir un fichier<input type="file" id="file" accept=".xlsx" hidden></label></div>
-      <div id="imp"></div>
-    </div>
+    <div class="card excel"><button class="btn" data-act="export">Exporter</button>
+      <label class="btn">Importer<input type="file" id="file" accept=".xlsx" hidden></label>
+      <div id="imp"></div></div>
     <div class="lbl" style="margin-top:22px">Compte</div>
     <div class="card"><div class="compte"><span class="meta">Connecté : ${esc(S.compte)}</span><button class="btn sm" data-act="logout">Se déconnecter</button></div>
+      <div class="compte" style="margin-top:6px"><span class="meta">Synchro</span><span id="sync" class="sync" hidden></span></div>
       <div class="meta" style="margin-top:6px">Lecture des liens : ${LECTEUR_URL ? "branchée" : "pas encore branchée (remplissage à la main)"}</div></div>` : ""}
     <div class="version">Version ${VERSION.replace("v", "")}</div>
     <div class="foot"><span></span><button class="btn" data-act="close">Fermer</button></div>
   </div></div>`;
+  majSynchro(); // l'indicateur de synchro vit maintenant ici
 }
 
 // Largeur des colonnes Excel (en caractères) ; 14 par défaut
@@ -1561,7 +1585,7 @@ async function exporter(btn) {
     toast("Fichier téléchargé");
   } catch (e) {
     toast("Export impossible : " + (e && e.message || e));
-  } finally { btn.disabled = false; btn.textContent = "Télécharger le fichier"; }
+  } finally { btn.disabled = false; btn.textContent = "Exporter"; }
 }
 
 // Valeur brute d'une case Excel : texte, nombre, ou date « AAAA-MM-JJ »
@@ -1838,6 +1862,12 @@ document.addEventListener("click", async e => {
     }
     case "calmode": setCalMode(el.dataset.v); render(); break;
     case "fopen": S.fopen[el.dataset.v] = !S.fopen[el.dataset.v]; render(); break;
+    case "add-open": {
+      S.addOpen[el.dataset.v] = !S.addOpen[el.dataset.v]; render();
+      const champ = $(el.dataset.v === "evts" ? "#url" : "#aurl");
+      if (champ) champ.focus();
+      break;
+    }
     case "extract": extract($("#url").value); break;
     case "archive": S.archive = !S.archive; render(); break;
     case "view": S.view = el.dataset.v; render(true); break;

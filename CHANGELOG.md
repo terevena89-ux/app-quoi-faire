@@ -1,5 +1,13 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.3.2 — 2026-11-06
+- Thème Suisse : filtres en couleur, une teinte douce par ligne (comme Dure Vie).
+- Thème Suisse : petites illustrations colorées pour les catégories d'idées (tirage, liste, pop-up).
+- À venir et Adresses : bouton « + Ajouter » à côté du titre, qui déplie un cadre « coller un lien / à la main ».
+- Indicateur de synchro déplacé dans Paramètres (Compte), pour tous les thèmes.
+- Excel plus compact : deux boutons Exporter / Importer.
+- Plus de compteur d'idées sur l'accueil (il reste dans la Liste).
+
 ## v1.3.1 — 2026-11-06
 - Nouveaux thèmes « Suisse » (papier et orange) et « Suisse nuit » (nuit et corail) : une seule police neutre (Inter), une seule couleur d'accent, cadres blancs fins, sans emoji ni pastilles.
 - « Automatique » passe à Suisse le jour et Suisse nuit le soir. Dure Vie, Pastel et Sombre restent au choix.

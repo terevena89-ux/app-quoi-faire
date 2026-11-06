@@ -613,3 +613,47 @@ a.item{color:inherit;text-decoration:none}
 [data-theme^="suisse"] .kline span:last-child{flex:none}
 /* bascules de vue (Cartes / Liste / Calendrier…) : neutres, comme un interrupteur */
 [data-theme^="suisse"] .row:not([data-acc]) .chip.on{background:var(--card);color:var(--ink);box-shadow:0 0 0 1px var(--line2)}
+
+/* =========================================================
+   v1.3.2 : bouton « + Ajouter » qui déplie le cadre d'ajout,
+   couleur par ligne de filtres en Suisse, Excel compact
+   ========================================================= */
+/* titre de page : dans les autres thèmes, seul le bouton « + Ajouter » apparaît */
+.ptitle{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 8px}
+.ptitle h2,.ptitle .pcount{display:none}
+[data-theme^="suisse"] .ptitle{align-items:baseline;justify-content:flex-start;margin:4px 0 10px}
+[data-theme^="suisse"] .ptitle h2,[data-theme^="suisse"] .ptitle .pcount{display:block}
+[data-theme^="suisse"] .ptitle .pcount{margin-right:auto}
+.addbtn{flex:none;display:inline-flex;align-items:center;gap:5px;border:1px dashed var(--line2);background:var(--card);color:var(--ink);border-radius:10px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.addbtn b{color:var(--orange);font-size:16px;line-height:1}
+.addbtn.on{border-style:solid;color:var(--muted)}
+/* cadre d'ajout déplié */
+.addc{padding:9px 10px;margin-bottom:12px;animation:rise .2s var(--ease) both}
+.addc .lbl{margin-bottom:6px}
+.addc .add{margin:0}
+.addc .btn svg{width:14px;height:14px}
+/* Excel : deux boutons côte à côte */
+.card.excel{display:flex;flex-wrap:wrap;gap:8px}
+.card.excel #imp{flex-basis:100%}
+.card.excel #imp:empty{display:none}
+/* Suisse : couleur douce par ligne de filtres (pervenche, orange, vert, rose, ambre) */
+[data-theme="suissenuit"]{--a1:rgba(179,198,247,.2);--at1:#c9d6fa;--a2:rgba(255,100,31,.22);--at2:#ffb08a;
+  --a3:rgba(143,209,168,.2);--at3:#a6e0bd;--a4:rgba(244,169,195,.2);--at4:#f6bdd1;--a5:rgba(240,192,112,.2);--at5:#f3cf8d}
+[data-theme^="suisse"] [data-acc="1"] .chip.on{background:var(--a1);color:var(--at1)}
+[data-theme^="suisse"] [data-acc="2"] .chip.on{background:var(--a2);color:var(--at2)}
+[data-theme^="suisse"] [data-acc="3"] .chip.on{background:var(--a3);color:var(--at3)}
+[data-theme^="suisse"] [data-acc="4"] .chip.on{background:var(--a4);color:var(--at4)}
+[data-theme^="suisse"] [data-acc="5"] .chip.on{background:var(--a5);color:var(--at5)}
+/* synchro, maintenant dans Paramètres */
+.compte .sync{font-size:11px}
+
+/* illustrations des catégories d'idées : seulement dans les thèmes Suisse (ailleurs, les emoji) */
+.ill{display:none}
+[data-theme^="suisse"] .ill{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:9px;background:var(--p)}
+[data-theme^="suisse"] .ill svg{width:24px;height:24px}
+[data-theme^="suisse"] .item.li .ill{width:26px;height:26px;border-radius:7px}
+[data-theme^="suisse"] .item.li .ill svg{width:19px;height:19px}
+[data-theme^="suisse"] .item.li.sub .ill{display:none}
+[data-theme^="suisse"] .ptop .ill{width:52px;height:52px;border-radius:12px}
+[data-theme^="suisse"] .ptop .ill svg{width:36px;height:36px}
+[data-theme="suissenuit"] .ill{filter:saturate(.9) brightness(.9)}

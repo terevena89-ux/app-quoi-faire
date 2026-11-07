@@ -1,5 +1,11 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.4.1 — 2026-11-07
+- Nouveau thème « Journal » (Paramètres → Thème), inspiré des sites d'info : traits noirs, coins carrés, titres très gras sur une barre épaisse, onglet actif en jaune fluo, petite ombre décalée sous les cartes.
+- Une couleur vive par rubrique (étiquettes d'événements, bandeaux des adresses) ; photos d'événements en noir et blanc teintées de cette couleur.
+- Textes secondaires (lieu, style) en police à empattements.
+- Jour ou nuit selon l'appareil, comme « Automatique ». Les autres thèmes ne changent pas.
+
 ## v1.4.0 — 2026-11-06
 - Adresses (vue Liste) façon tableur : colonnes Nom · Style · € · Statut, en-têtes collés en haut quand on fait défiler.
 - Une carte séparée par type (Restau, Bar, Café…), bandeau et fond à la couleur du type ; les épinglées dans leur propre carte en tête.

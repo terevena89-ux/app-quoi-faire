@@ -801,3 +801,93 @@ a.item{color:inherit;text-decoration:none}
 .fcol .chips{flex-wrap:wrap;gap:6px;margin:4px 0 12px}
 .fcol .chip{font-size:13.5px;padding:6px 12px}
 .fcol .foot{display:flex;justify-content:space-between;gap:8px}
+
+/* =========================================================
+   v1.4.1 : thème « Journal » (style journal d'info : traits noirs,
+   coins carrés, titres très gras, jaune fluo, une couleur vive par rubrique).
+   Ses noms commencent par « suisse » (suissejournal / suissejournalnuit) :
+   il reprend donc toute la mise en page du thème Suisse, et ne change que l'habillage.
+   ========================================================= */
+[data-theme="suissejournal"]{color-scheme:light;--bg:#fff;--card:#fff;--ink:#14161f;--on-ink:#fff;--dark:#14161f;--muted:#5c5f6b;
+  --line:rgba(20,22,31,.13);--line2:rgba(20,22,31,.28);--orange:#ff5649;--coral:#e8402f;--ok:#14894b;--sky:rgba(20,22,31,.06);
+  --peri:transparent;--header:#fff;--hero-line:transparent;--focus:rgba(255,236,58,.6);--case:uppercase;
+  --panel:#fff;--on-panel:#14161f;--panel-muted:#5c5f6b;--panel-line:rgba(20,22,31,.13);--panel-btn:rgba(20,22,31,.28);
+  --chipbg:rgba(20,22,31,.05);--acc-bg:rgba(255,86,73,.12);--acc-t:#c4301f;
+  --display:"Inter Tight","Inter",Helvetica,Arial,sans-serif;
+  --jaune:#ffec3a;--trait:#14161f;--flash:#f4f7ff;--ombre:rgba(20,22,31,.12)}
+[data-theme="suissejournalnuit"]{color-scheme:dark;--bg:#121318;--card:#17181e;--ink:#f2f1ec;--on-ink:#121318;--dark:#121318;--muted:#a2a4ad;
+  --line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.22);--orange:#ff6b5f;--coral:#ff8577;--ok:#5cd18f;--sky:rgba(255,255,255,.08);
+  --peri:transparent;--header:#121318;--hero-line:transparent;--focus:rgba(255,236,58,.4);--case:uppercase;
+  --panel:#17181e;--on-panel:#f2f1ec;--panel-muted:#a2a4ad;--panel-line:rgba(255,255,255,.1);--panel-btn:rgba(255,255,255,.22);
+  --chipbg:rgba(255,255,255,.07);--acc-bg:rgba(255,107,95,.18);--acc-t:#ff9b90;
+  --display:"Inter Tight","Inter",Helvetica,Arial,sans-serif;
+  --jaune:#ffec3a;--trait:#f2f1ec;--flash:#1c1e26;--ombre:#000;
+  --a1:rgba(179,198,247,.2);--at1:#c9d6fa;--a2:rgba(255,100,31,.22);--at2:#ffb08a}
+[data-theme="suissejournalnuit"] .ill{filter:saturate(.9) brightness(.9)}
+
+/* police : grotesque serrée pour tout, textes secondaires à empattements */
+[data-theme^="suissejournal"] body{font-family:"Inter Tight","Inter",Helvetica,Arial,sans-serif;letter-spacing:0}
+[data-theme^="suissejournal"] .evc .evinfo,[data-theme^="suissejournal"] .ptags,[data-theme^="suissejournal"] .item.li .gm,
+[data-theme^="suissejournal"] .tcarte td:nth-child(2),[data-theme^="suissejournal"] .pop .padr{font-family:"IBM Plex Serif",Georgia,serif}
+/* coins carrés partout (sauf les interrupteurs et la date du jour, qui restent ronds) */
+[data-theme^="suissejournal"] *{border-radius:0!important}
+[data-theme^="suissejournal"] .interr,[data-theme^="suissejournal"] .interr::after,[data-theme^="suissejournal"] .day.today .num{border-radius:999px!important}
+/* en-tête et onglets découpés en cases, onglet actif en jaune */
+[data-theme^="suissejournal"] header{border-bottom:1px solid var(--trait);backdrop-filter:none;-webkit-backdrop-filter:none}
+[data-theme^="suissejournal"] h1{font-weight:900;font-style:italic;letter-spacing:-.04em}
+[data-theme^="suissejournal"] .tabs{background:var(--card);border:1px solid var(--trait);padding:0;gap:0}
+[data-theme^="suissejournal"] .tab{font-weight:700}
+[data-theme^="suissejournal"] .tab+.tab{border-left:1px solid var(--trait)}
+[data-theme^="suissejournal"] .tab.on{background:var(--jaune);color:#14161f}
+/* titres de page : très gras, posés sur une barre noire épaisse */
+[data-theme^="suissejournal"] .ptitle h2,[data-theme^="suissejournal"] .hero h2{font-weight:900;font-size:30px;letter-spacing:-.035em}
+[data-theme^="suissejournal"] .ptitle,[data-theme^="suissejournal"] .hero{border-bottom:5px solid var(--ink)}
+/* boutons, bascules et filtres : simples contours noirs */
+[data-theme^="suissejournal"] .btn{border:1px solid var(--trait);background:var(--card);color:var(--ink);font-weight:500}
+[data-theme^="suissejournal"] .btn.primary{background:var(--jaune);border-color:#14161f;color:#14161f}
+[data-theme^="suissejournal"] .addbtn{border:1px solid var(--trait)}
+[data-theme^="suissejournal"] .seg{background:none;border:1px solid var(--trait)}
+[data-theme^="suissejournal"] .seg button+button{border-left:1px solid var(--trait)}
+[data-theme^="suissejournal"] .seg button.on{background:var(--ink);color:var(--on-ink);box-shadow:none}
+[data-theme^="suissejournal"] .fresume{background:var(--card);border:1px solid var(--trait)}
+[data-theme^="suissejournal"] .fresume .dot{background:var(--orange)}
+/* cartes : trait noir + petite ombre décalée */
+[data-theme^="suissejournal"] .card,[data-theme^="suissejournal"] .evc,[data-theme^="suissejournal"] .item.evl,
+[data-theme^="suissejournal"] .tcarte,[data-theme^="suissejournal"] .pinbloc,[data-theme^="suissejournal"] .fpanel{border:1px solid var(--trait);box-shadow:3px 3px 0 var(--ombre)}
+[data-theme^="suissejournal"] .card.pc.pinned{border-color:var(--orange);box-shadow:3px 3px 0 var(--orange)}
+[data-theme^="suissejournal"] .evc.reserve{box-shadow:3px 3px 0 var(--ok);border-color:var(--ok)}
+[data-theme^="suissejournal"] .evc .cover{border-bottom:1px solid var(--trait)}
+[data-theme^="suissejournal"] .evc .evbody h3,[data-theme^="suissejournal"] .pc h3{font-weight:800}
+/* photos d'événements en noir et blanc, teintées de la couleur de la rubrique */
+[data-theme^="suissejournal"] .evc .cover{background:var(--tint,var(--jaune))}
+[data-theme^="suissejournal"] .evc .cover img{filter:grayscale(1) contrast(1.15);mix-blend-mode:multiply}
+/* « À ne pas rater » : bandeau façon dernière minute */
+[data-theme^="suissejournal"] .alert{background:var(--flash);border:0;border-left:5px solid var(--orange)}
+[data-theme^="suissejournal"] .alert .eyebrow{color:var(--orange);font-weight:800}
+/* étiquettes collées et bordées de noir, couleurs vives par rubrique */
+[data-theme^="suissejournal"] .tg{border:1px solid #14161f;color:#14161f;font-weight:500}
+[data-theme^="suissejournal"] .tg+.tg{margin-left:-1px}
+[data-theme^="suissejournal"] .tags{gap:0}
+[data-theme^="suissejournal"] .tg.t-urgent{background:#ff5649;color:#fff}
+[data-theme^="suissejournal"] .tg.t-soon{background:var(--jaune)}
+[data-theme^="suissejournal"] [data-t="Expo"]{--tint:#d6c5f3}
+[data-theme^="suissejournal"] [data-t="Ciné"],[data-theme^="suissejournal"] [data-t="Atelier"]{--tint:#ffec3a}
+[data-theme^="suissejournal"] [data-t="Concert / Festival"],[data-theme^="suissejournal"] [data-t="Concert"],[data-theme^="suissejournal"] [data-t="Festival"]{--tint:#a9c7ff}
+[data-theme^="suissejournal"] [data-t="Spectacle"]{--tint:#ff8a7e}
+[data-theme^="suissejournal"] [data-t="Visite"]{--tint:#8ff7b4}
+[data-theme^="suissejournal"] .tg[data-t],[data-theme^="suissejournal"] .bar[data-t]{background:var(--tint,#ececec);color:#14161f}
+/* couleurs vives des types d'adresses et d'idées (bandeaux du tableau, pastilles) */
+[data-theme^="suissejournal"] [data-c="Restau"]{--p:#ff8a7e}[data-theme^="suissejournal"] [data-c="Bar"]{--p:#ff9bd6}
+[data-theme^="suissejournal"] [data-c="Café"]{--p:#ffec3a}[data-theme^="suissejournal"] [data-c="Musée"]{--p:#d6c5f3}
+[data-theme^="suissejournal"] [data-c="Lieu à visiter"]{--p:#8ff7b4}[data-theme^="suissejournal"] [data-c="Boutique"]{--p:#ffb36b}
+[data-theme^="suissejournal"] [data-c="Activité"]{--p:#a9c7ff}
+/* tableau des adresses : bandeau bordé de noir, fond blanc, vrais traits entre colonnes */
+[data-theme^="suissejournal"] .tcarte{--tc:var(--card)}
+[data-theme^="suissejournal"] .tband{border-bottom:1px solid var(--trait);color:#14161f;font-weight:800}
+[data-theme^="suissejournal"] .tcarte.pin .tband{color:#fff}
+[data-theme^="suissejournal"] .tentete th{border-bottom:2px solid var(--ink);font-weight:800}
+[data-theme^="suissejournal"] .tcarte td+td{background-image:none;border-left:1px solid var(--line)}
+[data-theme^="suissejournal"] .pst{border:1px solid var(--line2);background:none}
+[data-theme^="suissejournal"] .pst.a{border-color:#14161f;background:#ff8a7e;color:#14161f}
+/* fiches et pop-ups */
+[data-theme^="suissejournal"] .sheet,[data-theme^="suissejournal"] .pop{border:1px solid var(--trait)}

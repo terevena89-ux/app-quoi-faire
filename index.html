@@ -10,7 +10,7 @@
 <link rel="icon" href="icones/icone.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icones/icone-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@400;500;700;800;900&family=IBM+Plex+Serif:wght@400;500&family=Manrope:wght@400;500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script>
   // Thème choisi sur cet appareil, appliqué avant l'affichage pour éviter un flash.
@@ -19,7 +19,9 @@
     var choix = 'auto';
     try { choix = localStorage.getItem('qf-theme') || 'auto'; } catch (e) { /* stockage bloqué */ }
     var sombre = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.dataset.theme = choix === 'auto' ? (sombre ? 'suissenuit' : 'suisse') : choix;
+    // « journal » : Journal le jour, Journal nuit le soir (même principe)
+    document.documentElement.dataset.theme = choix === 'auto' ? (sombre ? 'suissenuit' : 'suisse')
+      : choix === 'journal' ? (sombre ? 'suissejournalnuit' : 'suissejournal') : choix;
   })();
 </script>
 </head>

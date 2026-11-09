@@ -1,5 +1,8 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.5.3 — 2026-11-09
+- Paramètres › Améliorations : bloc-notes libre pour noter mes idées d'amélioration, synchronisé entre le téléphone et le PC, avec un bouton Copier.
+
 ## v1.5.2 — 2026-11-09
 - Thème Journal : nouvelle palette « Risographie » (blanc cassé, encre bleu nuit, rose fluo pour les alertes, bleu franc pour l'onglet actif et le bouton principal, rubriques en couleurs d'affiche). Version nuit assortie.
 

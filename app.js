@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.5.2";
+const VERSION = "v1.5.3";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -94,7 +94,7 @@ let SHARED = MODE_DEMO ? "" : (() => {
 })();
 
 const S = {
-  idees: [], evts: [], sources: [], adresses: [], notes: "", L: LISTES, tab: "idees", picks: [],
+  idees: [], evts: [], sources: [], adresses: [], notes: "", ameliorations: "", L: LISTES, tab: "idees", picks: [],
   pret: false, compte: "",
   // filtres communs au tirage et à la liste d'idées
   f: { avec: "Couple", duree: "Soirée", ou: "Peu importe", meteo: "Peu importe", budget: "Tout" },
@@ -146,7 +146,7 @@ let demoT = null;
 function sauverDemo() {
   clearTimeout(demoT);
   demoT = setTimeout(() => {
-    const d = { idees: S.idees, evts: S.evts, sources: S.sources, adresses: S.adresses, notes: S.notes, reglages: S.reglages };
+    const d = { idees: S.idees, evts: S.evts, sources: S.sources, adresses: S.adresses, notes: S.notes, ameliorations: S.ameliorations, reglages: S.reglages };
     try { localStorage.setItem("qf-demo", JSON.stringify(d)); } catch (e) { /* stockage plein ou bloqué */ }
   }, 0);
 }
@@ -155,6 +155,7 @@ function demarrerDemo() {
   try { d = JSON.parse(localStorage.getItem("qf-demo")) || {}; } catch (e) { /* rien de gardé */ }
   ["idees", "evts", "sources", "adresses"].forEach(arr => { S[arr] = Array.isArray(d[arr]) ? d[arr] : []; });
   S.notes = String(d.notes || "");
+  S.ameliorations = String(d.ameliorations || "");
   S.reglages = Object.assign({}, REG_DEFAUT, d.reglages);
   uid = "demo";
   S.compte = "Mode démo (données sur cet appareil seulement)";
@@ -254,6 +255,13 @@ const API = {
   parseEventText: (texte, type, titre) => lecteur("texte", { texte, type, titre }),
   extractPlace: url => lecteur("place", { url })
 };
+// Paramètres › Améliorations : bloc-notes de mes idées d'amélioration de l'appli (module notes-idees.js).
+// Champ séparé de « notes » (l'onglet Notes en vrac) ; synchronisé, dans le même document.
+function sauverAmeliorations(texte) {
+  S.ameliorations = texte;
+  if (MODE_DEMO) return sauverDemo();
+  setDoc(refDonnees(), { ameliorations: texte }, { merge: true }).catch(erreurEcriture);
+}
 function sauverReglages() {
   if (MODE_DEMO) return sauverDemo();
   setDoc(refDonnees(), { reglages: S.reglages }, { merge: true }).catch(erreurEcriture);
@@ -321,6 +329,8 @@ function ecouter() {
   arrets.push(onSnapshot(refDonnees(), { includeMetadataChanges: true }, snap => {
     majSynchro("donnees", snap.metadata);
     const n = snap.exists() ? String(snap.data().notes || "") : "";
+    S.ameliorations = snap.exists() ? String(snap.data().ameliorations || "") : "";
+    NotesIdees.maj(S.ameliorations); // un autre appareil a pu les changer
     // réglages : ils ne changent pas la vue déjà ouverte, seulement celle du prochain démarrage
     const rg = snap.exists() && snap.data().reglages;
     if (rg) S.reglages = Object.assign({}, REG_DEFAUT, rg);
@@ -1672,6 +1682,7 @@ function openSettings() {
   $("#modal").innerHTML = `<div class="overlay" data-act="close-bg"><div class="sheet">
     <h2>Paramètres</h2>
     <button class="setrow card" data-act="open-notes"><span>Notes</span><span class="meta">Tes notes en vrac ›</span></button>
+    <button class="setrow card" data-act="ameliorations"><span>Améliorations</span><span class="meta">›</span></button>
     <div class="lbl" style="margin-top:22px">Apparence</div>
     <button class="setrow card" data-act="themes"><span>Thème</span><span class="meta">${esc(t.nom)} ›</span></button>
     <button class="setrow card" data-act="vibre"><span>Vibrations</span><span class="interr ${vibreOn() ? "on" : ""}" aria-hidden="true"></span></button>
@@ -2033,6 +2044,7 @@ document.addEventListener("click", async e => {
     case "open-notes": closeForm(); if (S.tab !== "notes") S.tabAvant = S.tab; S.tab = "notes"; render(true); window.scrollTo(0, 0); break;
     case "notes-retour": saveNotesNow(); S.tab = S.tabAvant || "idees"; render(true); window.scrollTo(0, 0); break;
     case "themes": openThemes(); break;
+    case "ameliorations": NotesIdees.ouvrir(S.ameliorations, sauverAmeliorations); break;
     case "vibre": {
       try { localStorage.setItem("qf-vibre", vibreOn() ? "non" : "oui"); } catch (err) { /* stockage bloqué */ }
       el.querySelector(".interr").classList.toggle("on", vibreOn());

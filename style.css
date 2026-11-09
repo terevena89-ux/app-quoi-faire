@@ -891,3 +891,46 @@ a.item{color:inherit;text-decoration:none}
 [data-theme^="suissejournal"] .pst.a{border-color:#14161f;background:#ff8a7e;color:#14161f}
 /* fiches et pop-ups */
 [data-theme^="suissejournal"] .sheet,[data-theme^="suissejournal"] .pop{border:1px solid var(--trait)}
+
+/* Petit panneau des listes déroulantes sur téléphone (module champs-mobile.js) :
+   il reprend les couleurs de l'appli, et suit donc le thème clair / sombre. */
+.pm-voile { --pm-fond: var(--card); --pm-texte: var(--ink); --pm-discret: var(--muted); --pm-trait: var(--line); --pm-accent: var(--orange); --pm-champ: var(--bg); }
+
+/* =========================================================
+   v1.5.0 : plus de bandeau en haut, onglets en bas de l'écran.
+   Chaque section commence par son titre, avec « + Add » et ⚙ à droite.
+   ========================================================= */
+main{padding-top:6px;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.hero{margin-top:0}
+/* titre de section : visible dans tous les thèmes */
+.ptitle{display:flex;align-items:center;justify-content:flex-start;gap:6px;margin:10px 0 10px}
+.ptitle h2{display:block;flex:1;min-width:0;margin:0;font-family:var(--display);font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptitle .addbtn{margin-left:0}
+.hero{display:flex;align-items:center;gap:8px}
+.hero h2{flex:1;min-width:0}
+[data-theme^="suisse"] .ptitle,[data-theme^="suisse"] .hero{align-items:center;margin-top:10px}
+/* bouton rond carré des Paramètres (et retour dans Notes) */
+.gear{flex:none;width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:10px;cursor:pointer;padding:0}
+.gear svg{width:18px;height:18px}
+.gear:active{transform:scale(.94)}
+[data-theme^="suissejournal"] .gear{border-color:var(--trait)}
+/* barre d'onglets en bas : icône + mot, trait de couleur au-dessus de l'onglet actif */
+.botnav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:8;display:none;margin:0;padding:0 0 env(safe-area-inset-bottom,0px);gap:0;
+  background:var(--card);border:0;border-top:1px solid var(--line2);border-radius:0;box-shadow:none}
+body.pret .botnav.tabs{display:flex}
+.botnav .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 7px;font-size:11.5px;font-weight:600;
+  border-radius:0;background:none;color:var(--muted);position:relative;box-shadow:none}
+.botnav .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.botnav .tab.on{background:none;color:var(--ink);box-shadow:none}
+.botnav .tab.on::before{content:"";position:absolute;top:-1px;left:24%;right:24%;height:3px;background:var(--orange)}
+@media(min-width:700px){.botnav.tabs{justify-content:center}.botnav .tab{flex:0 1 180px}}
+/* Journal : cases bordées de noir, onglet actif en jaune */
+[data-theme^="suissejournal"] .botnav.tabs{border-top:1px solid var(--trait)}
+[data-theme^="suissejournal"] .botnav .tab+.tab{border-left:1px solid var(--trait)}
+[data-theme^="suissejournal"] .botnav .tab.on{background:var(--jaune);color:#14161f}
+[data-theme^="suissejournal"] .botnav .tab.on::before{display:none}
+/* bouton flottant « + Nouvelle idée » : au-dessus de la barre */
+.fab{bottom:calc(74px + env(safe-area-inset-bottom,0px))}
+.toast{bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+/* Notes : petite ligne d'état sous le titre */
+.notesbar{margin:-4px 0 8px}

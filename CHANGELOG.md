@@ -1,5 +1,14 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.5.0 — 2026-11-09
+- Onglets Idées / À venir / Adresses en bas de l'écran (icône + mot), à portée du pouce.
+- Plus de bandeau « Quoi faire ? » + date en haut : chaque section commence par son titre, avec « + Add » et ⚙ (Paramètres) à droite.
+- Notes rangées dans les Paramètres (ligne « Notes › », flèche ‹ pour revenir).
+- Radar devient la 3e vue d'Adresses (Liste · Carte · Radar) ; « + Add » y ajoute un site.
+- Nouvelle icône.
+- Correctif : plus de barre de remplissage automatique (clé / carte / adresse) au-dessus du clavier dans les cases de saisie.
+- Sur téléphone, les listes déroulantes s'ouvrent dans un petit panneau en bas (coche sur le choix actuel, case « Chercher… » au-delà de 10 choix). Sur PC, rien ne change.
+
 ## v1.4.1 — 2026-11-07
 - Nouveau thème « Journal » (Paramètres → Thème), inspiré des sites d'info : traits noirs, coins carrés, titres très gras sur une barre épaisse, onglet actif en jaune fluo, petite ombre décalée sous les cartes.
 - Une couleur vive par rubrique (étiquettes d'événements, bandeaux des adresses) ; photos d'événements en noir et blanc teintées de cette couleur.

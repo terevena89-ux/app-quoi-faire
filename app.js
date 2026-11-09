@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.4.1";
+const VERSION = "v1.5.0";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -375,7 +375,6 @@ async function seConnecter(btn) {
 }
 
 function renderConnexion() {
-  $("#sub").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   $("#main").innerHTML = `<div class="empty"><span class="big">👋</span>Connecte-toi avec ton compte Google<br>pour retrouver tes idées sur tous tes appareils.
     <div class="actions" style="justify-content:center;margin-top:16px"><button class="btn primary" data-act="login">Se connecter avec Google</button></div>
     <div class="meta" id="lerr" style="margin-top:10px"></div></div>`;
@@ -619,6 +618,9 @@ const ICON = {
   spark: svg('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>'),
   prev: svg('<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>'),
   map: svg('<path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>'),
+  // Radar (sites à surveiller) et Paramètres (v1.5.0)
+  radar: svg('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l5.5-5.5"/>'),
+  gear: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
   target: svg('<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>'),
   list: svg('<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>'),
   grille: svg('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
@@ -671,7 +673,7 @@ function renderIdees() {
       ["Prix", "budget", PRIX_CHOIX, S.f, null, 5]]) +
     (urgents.length ? `<div class="alert"><div class="eyebrow">À ne pas rater</div>${urgents.map(e =>
       `<div class="ln"><span>${esc(e.titre)}</span><strong>${esc(e.st.label)}</strong></div>`).join("")}</div>` : "");
-  return `<section class="hero"><h2>On fait quoi ${quand}&nbsp;?</h2></section>` +
+  return `<section class="hero"><h2>On fait quoi ${quand}&nbsp;?</h2>${btnReglages()}</section>` +
     (S.mode === "liste" ? renderListe(seg, apres) : renderTirage(seg, apres));
 }
 
@@ -706,12 +708,14 @@ function ideaCard(i) {
 const basculeVue = (act, cur, vues) => `<div class="modebar"><div class="seg">${vues.map(([v, ic]) =>
   `<button class="${cur === v ? "on" : ""}" data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${ic} ${v}</button>`).join("")}</div></div>`;
 
-// Titre de page (le grand titre et le compteur ne s'affichent que dans les thèmes Suisse)
-// avec, à droite, le bouton « + Ajouter » qui déplie le cadre d'ajout.
-function titrePage(zone, titre, compte) {
-  const ouvert = !!S.addOpen[zone];
+// Titre de page (v1.5.0 : il remplace l'ancien bandeau du haut) avec, à droite,
+// le bouton « + Add » qui déplie le cadre d'ajout, puis le bouton des Paramètres.
+// actAdd : action à lancer à la place (ex. Radar → ajouter un site)
+const btnReglages = () => `<button class="gear" data-act="settings" title="Paramètres" aria-label="Paramètres">${ICON.gear}</button>`;
+function titrePage(zone, titre, compte, actAdd) {
+  const ouvert = !actAdd && !!S.addOpen[zone];
   return `<div class="ptitle"><h2>${titre}</h2>${compte ? `<span class="pcount">${esc(compte)}</span>` : ""}
-    <button class="addbtn ${ouvert ? "on" : ""}" data-act="add-open" data-v="${zone}" aria-expanded="${ouvert}">${ouvert ? "× Fermer" : "<b>+</b> Ajouter"}</button></div>`;
+    <button class="addbtn ${ouvert ? "on" : ""}" data-act="${actAdd || "add-open"}" data-v="${zone}" aria-expanded="${ouvert}">${ouvert ? "× Fermer" : "<b>+</b> Add"}</button>${btnReglages()}</div>`;
 }
 // Cadre d'ajout : coller un lien (lu automatiquement) ou remplir à la main
 function blocAjout(zone, titre, idChamp, aide, actLire, idBtn, actMain) {
@@ -984,9 +988,11 @@ const estLienMaps = s => /maps[.]app[.]goo[.]gl|goo[.]gl[/]maps|google[.][a-z.]+
 function renderAdresses() {
   const vis = adrVisibles();
   const cats = ["Toutes"].concat(adrCats().filter(c => S.adresses.some(a => a.cat === c)));
+  const vues = basculeVue("aview", S.aview, [["Liste", ICON.list], ["Carte", ICON.map], ["Radar", ICON.radar]]);
+  // Radar (3e vue, v1.5.0) : les sites à surveiller ; « Add » y ajoute un site
+  if (S.aview === "Radar") return titrePage("adresses", "Adresses", "", "new-src") + vues + renderRadar();
   return titrePage("adresses", "Adresses") +
-    blocAjout("adresses", "Ajouter une adresse", "aurl", "Coller un lien Maps…", "adr-extract", "ago", "new-adr") +
-    basculeVue("aview", S.aview, [["Liste", ICON.list], ["Carte", ICON.map]]) +
+    blocAjout("adresses", "Ajouter une adresse", "aurl", "Coller un lien Maps…", "adr-extract", "ago", "new-adr") + vues +
     // en Liste, les filtres passent par les flèches ▾ des en-têtes du tableau
     (S.aview === "Liste" ? renderAdrListe() : "") +
     (S.aview === "Liste" ? "" : blocFiltres("adresses", [
@@ -1192,11 +1198,8 @@ const domaine = u => String(u).replace(/^https?:\/\/(www[.])?/i, "").replace(/\/
 
 function renderRadar() {
   const groupes = srcCats().map(c => ({ cat: c, items: S.sources.filter(s => s.cat === c) })).filter(g => g.items.length);
-  return `<section class="hero mini"><div class="eyebrow">Radar · ${plur(S.sources.length, "site")} suivi${S.sources.length > 1 ? "s" : ""}</div>
-      <h2>Quoi de neuf chez tes lieux&nbsp;?</h2></section>
-    <div class="radar-bar">
+  return `<div class="radar-bar">
       <button class="btn primary" data-act="prompt">${ICON.spark} Prompt IA</button>
-      <button class="btn" data-act="new-src">+ Ajouter un site</button>
     </div>` +
     (groupes.length ? groupes.map(g => `<div class="card srcg">
       <div class="srch"><div class="emo" data-c="${esc(g.cat)}">${EMO_SRC[g.cat] || "📌"}</div>
@@ -1305,7 +1308,9 @@ async function copyPrompt() {
 /* ---------- bloc-notes ---------- */
 let notesT = null, notesSale = false;
 function renderNotes() {
-  return `<div class="notesbar"><b>Notes</b><span class="meta" id="nstate">${notesSale ? "Modifié…" : "Enregistré automatiquement"}</span></div>
+  // Notes s'ouvre depuis les Paramètres (v1.5.0) : flèche ‹ pour revenir à la section d'avant
+  return `<div class="ptitle"><button class="gear" data-act="notes-retour" title="Retour" aria-label="Retour">${ICON.prev}</button><h2>Notes</h2></div>
+    <div class="notesbar"><span class="meta" id="nstate">${notesSale ? "Modifié…" : "Enregistré automatiquement"}</span></div>
     <textarea class="notes" id="notes" placeholder="Une idée en vrac, un resto conseillé, un film à voir…">${esc(S.notes)}</textarea>`;
 }
 function noteChanged(v) {
@@ -1332,8 +1337,10 @@ function hauteurEntete() {
 window.addEventListener("resize", hauteurEntete);
 
 function render(anim) {
+  document.body.classList.toggle("pret", !!S.pret); // la barre d'onglets du bas n'apparaît qu'une fois connecté
   if (!S.pret) { if (!uid && auth) renderConnexion(); return; }
-  $("#sub").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  // ancien onglet Radar (avant v1.5.0) : c'est maintenant la 3e vue d'Adresses
+  if (S.tab === "radar") { S.tab = "adresses"; S.aview = "Radar"; }
   document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
   const main = $("#main");
   main.classList.remove("anim");
@@ -1661,7 +1668,8 @@ function openSettings() {
   const t = THEMES.find(x => x.id === choixTheme()) || THEMES[0];
   $("#modal").innerHTML = `<div class="overlay" data-act="close-bg"><div class="sheet">
     <h2>Paramètres</h2>
-    <div class="lbl">Apparence</div>
+    <button class="setrow card" data-act="open-notes"><span>Notes</span><span class="meta">Tes notes en vrac ›</span></button>
+    <div class="lbl" style="margin-top:22px">Apparence</div>
     <button class="setrow card" data-act="themes"><span>Thème</span><span class="meta">${esc(t.nom)} ›</span></button>
     <button class="setrow card" data-act="vibre"><span>Vibrations</span><span class="interr ${vibreOn() ? "on" : ""}" aria-hidden="true"></span></button>
     ${uid ? `<div class="lbl" style="margin-top:22px">Affichage au démarrage</div>
@@ -2018,6 +2026,9 @@ document.addEventListener("click", async e => {
     case "archive": S.archive = !S.archive; render(); break;
     case "view": S.view = el.dataset.v; render(true); break;
     case "settings": openSettings(); break;
+    // Notes : rangées dans les Paramètres ; on retient la section d'où l'on vient
+    case "open-notes": closeForm(); if (S.tab !== "notes") S.tabAvant = S.tab; S.tab = "notes"; render(true); window.scrollTo(0, 0); break;
+    case "notes-retour": saveNotesNow(); S.tab = S.tabAvant || "idees"; render(true); window.scrollTo(0, 0); break;
     case "themes": openThemes(); break;
     case "vibre": {
       try { localStorage.setItem("qf-vibre", vibreOn() ? "non" : "oui"); } catch (err) { /* stockage bloqué */ }

@@ -937,3 +937,39 @@ body.pret .botnav.tabs{display:flex}
 
 /* v1.5.1 : pop-up redessiné après une action (épingler, cocher, menu ⋯) : pas de nouvelle animation d'ouverture */
 .overlay.deja,.overlay.deja .pop{animation:none}
+
+/* =========================================================
+   v1.5.2 : thème Journal en palette « Risographie »
+   (rose fluo + bleu franc sur blanc cassé, comme une affiche imprimée en riso).
+   Même forme qu'avant : seules les couleurs changent.
+   --hl / --hlT : « surligneur » (onglet actif, bouton principal) et la couleur du texte posé dessus.
+   ========================================================= */
+[data-theme="suissejournal"]{--bg:#fbf8f2;--card:#fff;--ink:#17153a;--on-ink:#fff;--dark:#17153a;--muted:#615f78;
+  --line:rgba(23,21,58,.12);--line2:rgba(23,21,58,.28);--orange:#ff48b0;--coral:#e0309a;--sky:rgba(23,21,58,.06);
+  --header:#fbf8f2;--focus:rgba(0,120,191,.3);--panel:#fff;--on-panel:#17153a;--panel-muted:#615f78;
+  --panel-line:rgba(23,21,58,.12);--panel-btn:rgba(23,21,58,.28);--chipbg:rgba(23,21,58,.05);--acc-bg:rgba(255,72,176,.12);--acc-t:#c41d82;
+  --hl:#0078bf;--hlT:#fff;--trait:#17153a;--flash:#fff0f8;--ombre:rgba(23,21,58,.13);--aime:#ff9fd2;--encre-tag:#17153a}
+[data-theme="suissejournalnuit"]{--bg:#13122a;--card:#1b1a36;--ink:#f3f0ff;--on-ink:#13122a;--dark:#13122a;--muted:#a7a4c4;
+  --line:rgba(243,240,255,.1);--line2:rgba(243,240,255,.22);--orange:#ff5cbb;--coral:#ff7cc8;--sky:rgba(243,240,255,.08);
+  --header:#13122a;--focus:rgba(58,163,255,.35);--panel:#1b1a36;--on-panel:#f3f0ff;--panel-muted:#a7a4c4;
+  --panel-line:rgba(243,240,255,.1);--panel-btn:rgba(243,240,255,.22);--chipbg:rgba(243,240,255,.07);--acc-bg:rgba(255,92,187,.18);--acc-t:#ff9fd2;
+  --hl:#3aa3ff;--hlT:#0b0b1f;--trait:#f3f0ff;--flash:#2a1838;--ombre:#000;--aime:#ff8fca;--encre-tag:#17153a}
+/* surligneur bleu à la place du jaune */
+[data-theme^="suissejournal"] .tab.on,[data-theme^="suissejournal"] .botnav .tab.on{background:var(--hl);color:var(--hlT)}
+[data-theme^="suissejournal"] .btn.primary{background:var(--hl);border-color:var(--hl);color:var(--hlT)}
+[data-theme^="suissejournal"] .tg{border-color:var(--encre-tag);color:var(--encre-tag)}
+[data-theme^="suissejournal"] .tg.t-urgent{background:var(--orange);color:#fff}
+[data-theme^="suissejournal"] .tg.t-soon{background:#ffe14f}
+[data-theme^="suissejournal"] .tg[data-t],[data-theme^="suissejournal"] .bar[data-t],[data-theme^="suissejournal"] .tband{color:var(--encre-tag)}
+[data-theme^="suissejournal"] .evc .cover{background:var(--tint,#ffe14f)}
+[data-theme^="suissejournal"] .pst.a{border-color:var(--encre-tag);background:var(--aime);color:var(--encre-tag)}
+/* couleurs des rubriques, version riso */
+[data-theme^="suissejournal"] [data-t="Expo"]{--tint:#ffb3dc}
+[data-theme^="suissejournal"] [data-t="Ciné"],[data-theme^="suissejournal"] [data-t="Atelier"]{--tint:#ffe14f}
+[data-theme^="suissejournal"] [data-t="Concert / Festival"],[data-theme^="suissejournal"] [data-t="Concert"],[data-theme^="suissejournal"] [data-t="Festival"]{--tint:#8fc7ef}
+[data-theme^="suissejournal"] [data-t="Spectacle"]{--tint:#ff9e8a}
+[data-theme^="suissejournal"] [data-t="Visite"]{--tint:#9fe3c4}
+[data-theme^="suissejournal"] [data-c="Restau"]{--p:#ff9e8a}[data-theme^="suissejournal"] [data-c="Bar"]{--p:#c4b5ff}
+[data-theme^="suissejournal"] [data-c="Café"]{--p:#ffe14f}[data-theme^="suissejournal"] [data-c="Musée"]{--p:#ffb3dc}
+[data-theme^="suissejournal"] [data-c="Lieu à visiter"]{--p:#9fe3c4}[data-theme^="suissejournal"] [data-c="Boutique"]{--p:#ffc48a}
+[data-theme^="suissejournal"] [data-c="Activité"]{--p:#8fc7ef}

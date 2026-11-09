@@ -1,5 +1,8 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.5.2 — 2026-11-09
+- Thème Journal : nouvelle palette « Risographie » (blanc cassé, encre bleu nuit, rose fluo pour les alertes, bleu franc pour l'onglet actif et le bouton principal, rubriques en couleurs d'affiche). Version nuit assortie.
+
 ## v1.5.1 — 2026-11-09
 - Correctif : une action dans un pop-up (épingler, cocher, menu ⋯) ne rejoue plus l'animation d'ouverture.
 

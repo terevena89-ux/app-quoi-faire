@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.5.1";
+const VERSION = "v1.5.2";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -1624,7 +1624,7 @@ const THEMES = [
   { id: "suisse", nom: "Suisse", desc: "Papier et orange, épuré", sw: ["#f4f3f0", "#ffffff", "#161616", "#ec5a2e"] },
   { id: "suissenuit", nom: "Suisse nuit", desc: "Nuit et corail", sw: ["#141518", "#1e2024", "#ededea", "#ff7a4d"] },
   // Journal : jour ou nuit selon l'appareil, comme « Automatique »
-  { id: "journal", nom: "Journal", desc: "Traits noirs, jaune fluo, titres très gras (jour ou nuit selon l’appareil)", sw: ["#ffffff", "#ffec3a", "#14161f", "#ff5649"] },
+  { id: "journal", nom: "Journal", desc: "Affiche riso : rose fluo, bleu franc, titres très gras (jour ou nuit selon l’appareil)", sw: ["#fbf8f2", "#0078bf", "#17153a", "#ff48b0"] },
   { id: "durevie", nom: "Dure Vie", desc: "Encre, pervenche et orange", sw: ["#f4f3f7", "#b3c6f7", "#171520", "#ff641f"] },
   { id: "pastel", nom: "Pastel", desc: "Doux et arrondi, comme avant", sw: ["#fbf6f1", "#fde4dc", "#fff1d6", "#ec8a72"] },
   { id: "sombre", nom: "Sombre", desc: "Dure Vie de nuit", sw: ["#121019", "#283463", "#f1eff6", "#ff641f"] }

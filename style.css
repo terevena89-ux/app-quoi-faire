@@ -934,3 +934,6 @@ body.pret .botnav.tabs{display:flex}
 .toast{bottom:calc(80px + env(safe-area-inset-bottom,0px))}
 /* Notes : petite ligne d'état sous le titre */
 .notesbar{margin:-4px 0 8px}
+
+/* v1.5.1 : pop-up redessiné après une action (épingler, cocher, menu ⋯) : pas de nouvelle animation d'ouverture */
+.overlay.deja,.overlay.deja .pop{animation:none}

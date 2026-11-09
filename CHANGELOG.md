@@ -1,5 +1,8 @@
 # Journal des nouveautés — Quoi faire ?
 
+## v1.5.1 — 2026-11-09
+- Correctif : une action dans un pop-up (épingler, cocher, menu ⋯) ne rejoue plus l'animation d'ouverture.
+
 ## v1.5.0 — 2026-11-09
 - Onglets Idées / À venir / Adresses en bas de l'écran (icône + mot), à portée du pouce.
 - Plus de bandeau « Quoi faire ? » + date en haut : chaque section commence par son titre, avec « + Add » et ⚙ (Paramètres) à droite.

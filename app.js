@@ -26,7 +26,7 @@ import { chargerExcelJS, ajouterFeuille, telechargerClasseur, lireClasseur } fro
 
 /* ---------- 1. Réglages de base ---------- */
 
-const VERSION = "v1.5.0";
+const VERSION = "v1.5.1";
 const NOM_APPLI = "app-quoi-faire"; // dossier dans Firestore et nom des fichiers Excel
 
 // Adresse du mini Apps Script « lecteur de liens » (celle qui finit par /exec).
@@ -1502,7 +1502,10 @@ function afficherPopup() {
   const titre = o.titre || o.nom || "(sans titre)";
   const menu = `<span class="pmenu"><button class="pmini ${popup.menu ? "on" : ""}" data-act="pop-menu" aria-label="Plus d’actions" aria-expanded="${popup.menu}">${ICON.dots}</button>
     ${popup.menu ? `<div class="pdd"><button data-act="pop-edit">${ICON.edit}Modifier</button><button class="sup" data-act="pop-del">${ICON.trash}Supprimer</button></div>` : ""}</span>`;
-  $("#modal").innerHTML = `<div class="overlay centre" data-act="close-bg"><div class="pop" role="dialog" aria-label="${esc(titre)}">
+  // Déjà affiché (on vient d'épingler, de cocher, d'ouvrir le menu…) : on redessine sans rejouer l'ouverture
+  const deja = popup.vu && $("#modal .pop") ? " deja" : "";
+  popup.vu = true;
+  $("#modal").innerHTML = `<div class="overlay centre${deja}" data-act="close-bg"><div class="pop" role="dialog" aria-label="${esc(titre)}">
     <div class="ptop">${vignette}
       <div class="ptx">${kicker ? `<div class="kicker">${kicker}</div>` : ""}<h3>${esc(titre)}</h3>${etiquettes ? `<div class="pbds">${etiquettes}</div>` : ""}</div>
       <div class="pcoin">${menu}<button class="pmini" data-act="close" aria-label="Fermer">${ICON.x}</button></div></div>
